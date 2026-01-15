@@ -18,7 +18,14 @@ def import_data():
         log("Importing data to configured database...")
         log(f"Target DB: {app.config['SQLALCHEMY_DATABASE_URI']}")
         
-        # Ensure tables exist
+        # Ensure tables exist with correct schema
+        log("Dropping existing tables (if any)...")
+        try:
+            db.drop_all()
+            log("Tables dropped.")
+        except Exception as e:
+            log(f"Note: {e}")
+        
         log("Creating database tables...")
         try:
             db.create_all()
