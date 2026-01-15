@@ -29,8 +29,10 @@ def import_data():
 
         try:
             with open('rideshare_backup.json', 'r') as f:
-
-            data = json.load(f)
+                data = json.load(f)
+        except Exception as e:
+            log(f"Error loading backup file: {e}")
+            return "\n".join(logs)
 
         # Users
         log(f"Importing {len(data['users'])} users...")
