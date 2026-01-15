@@ -52,3 +52,6 @@ static/uploads/*
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Sensitive backup files
+'envfile data if erased.txt'
