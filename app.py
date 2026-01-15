@@ -222,6 +222,16 @@ def validate_ride_time(start_datetime, distance, package_type):
     
     return True, None
 
+@app.route('/migrate_db_secret_key')
+def run_migration_script():
+    """Temporary route to run data migration on Render."""
+    try:
+        from import_data import import_data
+        import_data()
+        return "Migration started! Check your Render logs for details. If successful, your data is now in Postgres."
+    except Exception as e:
+        return f"Migration failed: {str(e)}"
+
 class User(UserMixin, db.Model):
     """Model for user accounts."""
     id = db.Column(db.Integer, primary_key=True)
