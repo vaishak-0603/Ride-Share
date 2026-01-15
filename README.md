@@ -93,8 +93,8 @@ A modern, full-featured Ride-Share platform built with Flask that connects drive
 ### Test Accounts (if seeded)
 | Role | Email | Password |
 |------|-------|----------|
-| User | test@example.com | password123 |
-| Admin | admin@example.com | admin123 |
+| User | prajithm23@gmail.com | Prajithm1 |
+| User | karthikprakash@gmail.com | Prajithm1 |
 
 ## 📱 How to Use
 
