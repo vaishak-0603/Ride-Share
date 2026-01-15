@@ -5,24 +5,35 @@ from dateutil import parser
 from app import app, db, User, Car, Ride, Booking, Review, Wallet, Expense
 
 def import_data():
+    logs = []
+    def log(msg):
+        logs.append(str(msg))
+        log(msg)
+
     if not os.path.exists('rideshare_backup.json'):
-        print("rideshare_backup.json not found!")
-        return
+        log("rideshare_backup.json not found!")
+        return "\n".join(logs)
 
     with app.app_context():
-        print("Importing data to configured database...")
-        print(f"Target DB: {app.config['SQLALCHEMY_DATABASE_URI']}")
+        log("Importing data to configured database...")
+        log(f"Target DB: {app.config['SQLALCHEMY_DATABASE_URI']}")
         
         # Ensure tables exist
-        print("Creating database tables...")
-        db.create_all()
-        print("Tables created.")
-        
-        with open('rideshare_backup.json', 'r') as f:
+        log("Creating database tables...")
+        try:
+            db.create_all()
+            db.session.commit()
+            log("Tables created successfully.")
+        except Exception as e:
+            log(f"Error creating tables: {e}")
+
+        try:
+            with open('rideshare_backup.json', 'r') as f:
+
             data = json.load(f)
 
         # Users
-        print(f"Importing {len(data['users'])} users...")
+        log(f"Importing {len(data['users'])} users...")
         for u_data in data['users']:
             if not User.query.get(u_data['id']):
                 user = User(
@@ -42,7 +53,7 @@ def import_data():
         db.session.commit()
 
         # Cars
-        print(f"Importing {len(data['cars'])} cars...")
+        log(f"Importing {len(data['cars'])} cars...")
         for c_data in data['cars']:
             if not Car.query.get(c_data['id']):
                 car = Car(
@@ -62,7 +73,7 @@ def import_data():
         db.session.commit()
 
         # Rides
-        print(f"Importing {len(data['rides'])} rides...")
+        log(f"Importing {len(data['rides'])} rides...")
         for r_data in data['rides']:
             if not Ride.query.get(r_data['id']):
                 ride = Ride(
@@ -93,7 +104,7 @@ def import_data():
         db.session.commit()
 
         # Bookings
-        print(f"Importing {len(data['bookings'])} bookings...")
+        log(f"Importing {len(data['bookings'])} bookings...")
         for b_data in data['bookings']:
             if not Booking.query.get(b_data['id']):
                 booking = Booking(
@@ -115,7 +126,7 @@ def import_data():
         db.session.commit()
         
         # Reviews
-        print(f"Importing {len(data['reviews'])} reviews...")
+        log(f"Importing {len(data['reviews'])} reviews...")
         for rev_data in data['reviews']:
             if not Review.query.get(rev_data['id']):
                 review = Review(
@@ -133,7 +144,7 @@ def import_data():
         db.session.commit()
         
         # Wallets
-        print(f"Importing {len(data['wallets'])} wallets...")
+        log(f"Importing {len(data['wallets'])} wallets...")
         for w_data in data['wallets']:
             if not Wallet.query.get(w_data['id']):
                 wallet = Wallet(
@@ -149,7 +160,7 @@ def import_data():
         db.session.commit()
         
         # Expenses
-        print(f"Importing {len(data['expenses'])} expenses...")
+        log(f"Importing {len(data['expenses'])} expenses...")
         for e_data in data['expenses']:
             if not Expense.query.get(e_data['id']):
                 expense = Expense(
@@ -163,7 +174,7 @@ def import_data():
                 db.session.add(expense)
         db.session.commit()
 
-        print("Data imported successfully!")
+        log("Data imported successfully!")
 
 if __name__ == "__main__":
     import_data()

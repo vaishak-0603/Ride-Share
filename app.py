@@ -227,10 +227,10 @@ def run_migration_script():
     """Temporary route to run data migration on Render."""
     try:
         from import_data import import_data
-        import_data()
-        return "Migration started! Check your Render logs for details. If successful, your data is now in Postgres."
+        logs = import_data()
+        return f"<pre>{logs}</pre>"
     except Exception as e:
-        return f"Migration failed: {str(e)}"
+        return f"Migration error: {str(e)}"
 
 class User(UserMixin, db.Model):
     """Model for user accounts."""
