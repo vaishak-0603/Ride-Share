@@ -184,6 +184,8 @@ def import_data():
         db.session.commit()
 
         log("Data imported successfully!")
+        
+        return "\n".join(logs)
 
 if __name__ == "__main__":
     import_data()
