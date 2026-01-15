@@ -13,6 +13,11 @@ def import_data():
         print("Importing data to configured database...")
         print(f"Target DB: {app.config['SQLALCHEMY_DATABASE_URI']}")
         
+        # Ensure tables exist
+        print("Creating database tables...")
+        db.create_all()
+        print("Tables created.")
+        
         with open('rideshare_backup.json', 'r') as f:
             data = json.load(f)
 
