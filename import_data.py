@@ -8,7 +8,7 @@ def import_data():
     logs = []
     def log(msg):
         logs.append(str(msg))
-        log(msg)
+        print(msg)
 
     if not os.path.exists('rideshare_backup.json'):
         log("rideshare_backup.json not found!")
