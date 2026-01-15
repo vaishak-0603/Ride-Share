@@ -222,6 +222,16 @@ def validate_ride_time(start_datetime, distance, package_type):
     
     return True, None
 
+@app.route('/fix_sequences_temp_route')
+def fix_sequences_route():
+    """Temporary route to fix PostgreSQL sequences."""
+    try:
+        from fix_sequences import fix_sequences
+        fix_sequences()
+        return "Sequences fixed! You can now create rides."
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 
 class User(UserMixin, db.Model):
     """Model for user accounts."""
