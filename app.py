@@ -222,15 +222,6 @@ def validate_ride_time(start_datetime, distance, package_type):
     
     return True, None
 
-@app.route('/migrate_db_secret_key')
-def run_migration_script():
-    """Temporary route to run data migration on Render."""
-    try:
-        from import_data import import_data
-        logs = import_data()
-        return f"<pre>{logs}</pre>"
-    except Exception as e:
-        return f"Migration error: {str(e)}"
 
 class User(UserMixin, db.Model):
     """Model for user accounts."""
