@@ -1,0 +1,418 @@
+/**
+ * MAP STYLES CSS
+ * 
+ * Styling for all map-related components in the Ride-Share app.
+ * Makes maps look professional and matches the taxi yellow theme.
+ */
+
+/* ============================================
+   MAP CONTAINER STYLES
+   ============================================ */
+
+.map-container {
+    height: 500px;
+    width: 100%;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.map-full-height {
+    height: calc(100vh - 250px);
+    min-height: 400px;
+}
+
+/* ============================================
+   LEAFLET POPUP CUSTOMIZATION
+   ============================================ */
+
+.leaflet-popup-content-wrapper {
+    border-radius: var(--border-radius) !important;
+    padding: 0 !important;
+}
+
+.leaflet-popup-content {
+    margin: 0 !important;
+    min-width: 250px;
+}
+
+/* Ride Popup Styling */
+.ride-popup {
+    padding: var(--space-4);
+}
+
+.ride-popup h6 {
+    color: var(--secondary);
+    font-weight: 700;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--primary);
+}
+
+.ride-popup p {
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+}
+
+.ride-popup .btn {
+    margin-top: var(--space-2);
+}
+
+/* SOS Popup Styling */
+.sos-popup {
+    padding: var(--space-4);
+    background: var(--danger-light);
+}
+
+.sos-popup h6 {
+    color: var(--danger);
+    font-weight: 700;
+    margin-bottom: var(--space-3);
+}
+
+/* ============================================
+   SOS MARKER PULSE ANIMATION
+   ============================================ */
+
+@keyframes sos-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 61, 0, 0.7);
+    }
+
+    50% {
+        box-shadow: 0 0 0 15px rgba(255, 61, 0, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 61, 0, 0);
+    }
+}
+
+.sos-marker-pulse {
+    animation: sos-pulse 2s infinite;
+}
+
+/* ============================================
+   MAP CONTROLS OVERLAY
+   ============================================ */
+
+.map-controls-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: var(--bg-white);
+    padding: var(--space-3);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    max-width: 300px;
+}
+
+.map-controls-overlay .btn {
+    margin-bottom: var(--space-2);
+}
+
+/* ============================================
+   MAP TOGGLE BUTTONS
+   ============================================ */
+
+.map-toggle-buttons {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.map-toggle-buttons .btn {
+    flex: 1;
+}
+
+.map-toggle-buttons .btn.active {
+    background: var(--primary);
+    color: var(--secondary);
+    border-color: var(--primary);
+}
+
+/* ============================================
+   SOS FLOATING ACTION BUTTON
+   ============================================ */
+
+.sos-fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: var(--text-white);
+    border: none;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    font-weight: 700;
+}
+
+.sos-fab:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-xl);
+    background: var(--danger-dark);
+}
+
+.sos-fab i {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+}
+
+.sos-fab span {
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.sos-fab.sos-active {
+    animation: sos-pulse 2s infinite;
+    background: var(--danger-dark);
+}
+
+/* ============================================
+   LOCATION PICKER MAP
+   ============================================ */
+
+.location-picker-container {
+    position: relative;
+    margin-bottom: var(--space-4);
+}
+
+.location-picker-map {
+    height: 400px;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
+}
+
+.location-picker-instructions {
+    background: var(--primary-light);
+    padding: var(--space-3);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--space-2);
+    font-size: var(--font-size-sm);
+}
+
+.location-picker-instructions i {
+    color: var(--primary);
+}
+
+/* ============================================
+   MAP LEGEND
+   ============================================ */
+
+.map-legend {
+    background: var(--bg-white);
+    padding: var(--space-3);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-card);
+    font-size: var(--font-size-sm);
+}
+
+.map-legend h6 {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+
+.map-legend .badge {
+    margin-right: var(--space-2);
+    margin-bottom: var(--space-1);
+}
+
+/* ============================================
+   ROUTE LINE CUSTOMIZATION
+   ============================================ */
+
+.leaflet-routing-container {
+    display: none !important;
+    /* Hide turn-by-turn instructions */
+}
+
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .map-container {
+        height: 350px;
+    }
+
+    .map-full-height {
+        height: calc(100vh - 200px);
+    }
+
+    .map-controls-overlay {
+        position: relative;
+        top: 0;
+        right: 0;
+        max-width: 100%;
+        margin-bottom: var(--space-3);
+    }
+
+    .sos-fab {
+        width: 60px;
+        height: 60px;
+        bottom: 20px;
+        right: 20px;
+    }
+
+    .sos-fab i {
+        font-size: 1.2rem;
+    }
+
+    .sos-fab span {
+        font-size: 0.6rem;
+    }
+
+    .leaflet-popup-content {
+        min-width: 200px;
+    }
+}
+
+/* ============================================
+   LOADING SPINNER FOR MAP
+   ============================================ */
+
+.map-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: var(--bg-white);
+    padding: var(--space-4);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.map-loading .spinner-border {
+    color: var(--primary);
+}
+
+/* ============================================
+   MARKER CLUSTER STYLES (OPTIONAL)
+   ============================================ */
+
+.marker-cluster-small {
+    background-color: rgba(253, 189, 1, 0.6);
+}
+
+.marker-cluster-small div {
+    background-color: rgba(253, 189, 1, 0.8);
+}
+
+.marker-cluster-medium {
+    background-color: rgba(253, 189, 1, 0.7);
+}
+
+.marker-cluster-medium div {
+    background-color: rgba(253, 189, 1, 0.9);
+}
+
+.marker-cluster-large {
+    background-color: rgba(253, 189, 1, 0.8);
+}
+
+.marker-cluster-large div {
+    background-color: var(--primary);
+}
+
+/* ============================================
+   CUSTOM MARKER STYLES
+   ============================================ */
+
+.custom-marker {
+    background: var(--primary);
+    color: var(--secondary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    box-shadow: var(--shadow-md);
+    border: 3px solid var(--bg-white);
+}
+
+.custom-marker.sos {
+    background: var(--danger);
+    color: var(--text-white);
+    animation: sos-pulse 2s infinite;
+}
+
+/* ============================================
+   FILTER PANEL
+   ============================================ */
+
+.filter-panel {
+    background: var(--bg-white);
+    padding: var(--space-4);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-card);
+    margin-bottom: var(--space-4);
+}
+
+.filter-panel .form-label {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   STATS CARDS FOR MAP PAGE
+   ============================================ */
+
+.map-stats-card {
+    background: var(--bg-white);
+    padding: var(--space-4);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-card);
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.map-stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.map-stats-card .stats-icon {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: var(--space-2);
+}
+
+.map-stats-card .stats-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--secondary);
+}
+
+.map-stats-card .stats-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
+   DARK MODE SUPPORT (OPTIONAL)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    .leaflet-tile {
+        filter: brightness(0.8) contrast(1.2);
+    }
+}

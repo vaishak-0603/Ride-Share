@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>Reviews for {{ user.username }}</h2>
+                <div>
+                    <span class="badge bg-success me-2" title="Green Flags">
+                        <i class="bi bi-flag-fill"></i> {{ user.green_flags or 0 }}
+                    </span>
+                    <span class="badge bg-danger" title="Red Flags">
+                        <i class="bi bi-flag-fill"></i> {{ user.red_flags or 0 }}
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center mt-2">
+                <div class="me-3">
+                    <span class="badge bg-success">
+                        <i class="bi bi-flag-fill me-1"></i>{{ user.green_flags or 0 }} Green
+                    </span>
+                </div>
+                <div class="me-3">
+                    <span class="badge bg-danger">
+                        <i class="bi bi-flag-fill me-1"></i>{{ user.red_flags or 0 }} Red
+                    </span>
+                </div>
+                <div>
+                    <span class="text-muted">{{ reviews|length }} reviews</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            {% if reviews %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">All Reviews</h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for review in reviews %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="mb-1">
+                                            {% if review.flag_type == 'green' %}
+                                            <span class="badge bg-success"><i class="bi bi-flag-fill me-1"></i>Green Flag</span>
+                                            {% elif review.flag_type == 'red' %}
+                                            <span class="badge bg-danger"><i class="bi bi-flag-fill me-1"></i>Red Flag</span>
+                                            {% endif %}
+                                            <span class="ms-2 text-muted">{{ review.created_at.strftime('%B %d, %Y') }}</span>
+                                        </div>
+                                        <p class="mb-0">{{ review.comment or "No comment provided." }}</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <p class="mb-0">
+                                            <a href="{{ url_for('user_profile', user_id=review.reviewer.id) }}">
+                                                {{ review.reviewer.username }}
+                                            </a>
+                                        </p>
+                                        <small class="text-muted">
+                                            {% if review.reviewer_id == review.booking.ride.driver_id %}
+                                                Driver
+                                            {% else %}
+                                                Passenger
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-flag display-1 text-muted"></i>
+                        <h4 class="mt-3">No Reviews Yet</h4>
+                        <p class="text-muted">This user hasn't received any reviews yet.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

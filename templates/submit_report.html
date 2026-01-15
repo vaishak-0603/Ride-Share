@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Submit Report or Feedback</h4>
+                </div>
+                <div class="card-body">
+                    {% if active_booking %}
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading">Currently Active Ride</h6>
+                        <p class="mb-0">
+                            <strong>Route:</strong> {{ active_booking.ride.origin }} → {{ active_booking.ride.destination }}<br>
+                            <strong>Driver:</strong> {{ active_booking.ride.driver.username }}<br>
+                            <strong>Started:</strong> {{ active_booking.ride.start_date.strftime('%Y-%m-%d %H:%M') }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.report_type.label(class="form-label") }}
+                            {{ form.report_type(class="form-select" + (" is-invalid" if form.report_type.errors else "")) }}
+                            {% for error in form.report_type.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.subject.label(class="form-label") }}
+                            {{ form.subject(class="form-control" + (" is-invalid" if form.subject.errors else "")) }}
+                            {% for error in form.subject.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="5") }}
+                            {% for error in form.description.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Please provide as much detail as possible.</div>
+                        </div>
+
+                        <!-- Emergency-specific fields -->
+                        <div id="emergencyFields" style="display: none;">
+                            <div class="mb-3">
+                                {{ form.emergency_type.label(class="form-label") }}
+                                {{ form.emergency_type(class="form-select" + (" is-invalid" if form.emergency_type.errors else "")) }}
+                                {% for error in form.emergency_type.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form.location.label(class="form-label") }}
+                                {{ form.location(class="form-control" + (" is-invalid" if form.location.errors else ""), placeholder="Current location or address") }}
+                                {% for error in form.location.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                For immediate assistance in life-threatening situations, please contact emergency services directly.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reportType = document.getElementById('report_type');
+    const emergencyFields = document.getElementById('emergencyFields');
+    const submitButton = document.querySelector('button[type="submit"]');
+
+    function updateForm() {
+        if (reportType.value === 'emergency') {
+            emergencyFields.style.display = 'block';
+            submitButton.classList.remove('btn-primary');
+            submitButton.classList.add('btn-danger');
+            submitButton.textContent = 'Submit Emergency Report';
+        } else {
+            emergencyFields.style.display = 'none';
+            submitButton.classList.remove('btn-danger');
+            submitButton.classList.add('btn-primary');
+            submitButton.textContent = 'Submit Report';
+        }
+    }
+
+    reportType.addEventListener('change', updateForm);
+    updateForm();
+});
+</script>
+{% endblock %}

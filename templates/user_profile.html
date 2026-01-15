@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Profile Header -->
+<div class="profile-header mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <div class="profile-info">
+                <h1 class="profile-name">
+                    <i class="bi bi-person-circle text-primary me-2"></i>
+                    {% block title %}{{ user.username }}'s Profile - Ride-Share{% endblock %}
+                </h1>
+                <p class="text-muted mb-2">
+                    <i class="bi bi-envelope me-1"></i>{{ user.email }}
+                    {% if user.phone %}
+                    <span class="ms-3"><i class="bi bi-telephone me-1"></i>{{ user.phone }}</span>
+                    {% endif %}
+                </p>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-calendar me-1"></i>Member since {{ user.created_at.strftime('%B %Y') }}
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="profile-stats">
+                <div class="user-badges">
+                    <span class="badge bg-success me-2">
+                        <i class="bi bi-flag-fill me-1"></i>{{ user.green_flags }} Green Flags
+                    </span>
+                    {% if user.red_flags > 0 %}
+                    <span class="badge bg-danger">
+                        <i class="bi bi-flag-fill me-1"></i>{{ user.red_flags }} Red Flags
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card bg-primary text-white">
+            <div class="stat-card-body">
+                <div class="stat-icon">
+                    <i class="bi bi-car-front"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ user.total_rides }}</h3>
+                    <p class="stat-label">Total Rides</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card bg-success text-white">
+            <div class="stat-card-body">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ user.bookings|length }}</h3>
+                    <p class="stat-label">Total Bookings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card bg-info text-white">
+            <div class="stat-card-body">
+                <div class="stat-icon">
+                    <i class="bi bi-flag"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ user.reviews_received|length }}</h3>
+                    <p class="stat-label">Reviews Received</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card bg-warning text-dark">
+            <div class="stat-card-body">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ user.cars|length }}</h3>
+                    <p class="stat-label">Cars Registered</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Tabs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews"
+                            type="button" role="tab">
+                            <i class="bi bi-flag me-2"></i>Reviews
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="rides-tab" data-bs-toggle="tab" data-bs-target="#rides"
+                            type="button" role="tab">
+                            <i class="bi bi-car-front me-2"></i>Recent Rides
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="cars-tab" data-bs-toggle="tab" data-bs-target="#cars" type="button"
+                            role="tab">
+                            <i class="bi bi-gear me-2"></i>Cars
+                        </button>
+                    </li>
+                    {% if current_user.is_authenticated and current_user.id != user.id %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact"
+                            type="button" role="tab">
+                            <i class="bi bi-chat me-2"></i>Contact
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="profileTabContent">
+                    <!-- Reviews Tab -->
+                    <div class="tab-pane fade show active" id="reviews" role="tabpanel">
+                        {% if user.reviews_received %}
+                        <div class="reviews-section">
+                            <div class="row">
+                                {% for review in user.reviews_received %}
+                                <div class="col-lg-6 col-md-12 mb-3">
+                                    <div class="review-card">
+                                        <div class="review-header">
+                                            <div class="reviewer-info">
+                                                <h6 class="mb-1">{{ review.reviewer.username }}</h6>
+                                                <small class="text-muted">{{ review.created_at.strftime('%B %d, %Y')
+                                                    }}</small>
+                                            </div>
+                                            <div class="review-flag">
+                                                {% if review.flag_type == 'green' %}
+                                                <span class="badge bg-success"><i class="bi bi-flag-fill me-1"></i>Green
+                                                    Flag</span>
+                                                {% elif review.flag_type == 'red' %}
+                                                <span class="badge bg-danger"><i class="bi bi-flag-fill me-1"></i>Red
+                                                    Flag</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="review-body">
+                                            {% if review.comment %}
+                                            <p class="review-comment">{{ review.comment }}</p>
+                                            {% else %}
+                                            <p class="text-muted">No comment provided</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="review-footer">
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar-event me-1"></i>
+                                                Ride: {{ review.booking.ride.origin }} → {{
+                                                review.booking.ride.destination }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-flag display-1 text-muted"></i>
+                            <h4 class="mt-3">No Reviews Yet</h4>
+                            <p class="text-muted">This user hasn't received any reviews yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Recent Rides Tab -->
+                    <div class="tab-pane fade" id="rides" role="tabpanel">
+                        {% set recent_rides = user.rides_offered|sort(attribute='start_date', reverse=true)|list %}
+                        {% if recent_rides %}
+                        <div class="rides-section">
+                            <div class="row">
+                                {% for ride in recent_rides %}
+                                {% if loop.index <= 10 %} <div class="col-lg-6 col-md-12 mb-3">
+                                    <div class="ride-summary-card">
+                                        <div class="ride-summary-header">
+                                            <h6 class="ride-route">
+                                                <i class="bi bi-geo-alt me-2"></i>
+                                                {{ ride.origin }} → {{ ride.destination }}
+                                            </h6>
+                                            <span
+                                                class="badge bg-{{ 'success' if ride.status == 'UPCOMING' else ('primary' if ride.status == 'ONGOING' else ('danger' if ride.status == 'CANCELLED' else 'secondary')) }}">
+                                                {{ ride.status|title }}
+                                            </span>
+                                        </div>
+                                        <div class="ride-summary-body">
+                                            <div class="ride-details">
+                                                <p><i class="bi bi-calendar-event me-2"></i>{{
+                                                    ride.start_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                                <p><i class="bi bi-people me-2"></i>{{
+                                                    ride.bookings|selectattr('status', 'equalto',
+                                                    'CONFIRMED')|list|length }}/{{ ride.seats }} passengers</p>
+                                                <p><i class="bi bi-currency-rupee me-2"></i>₹{{
+                                                    "%.2f"|format(ride.price_per_seat) }} per seat</p>
+                                                <p><i class="bi bi-geo-alt me-2"></i>{{ ride.distance }} km</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-car-front display-1 text-muted"></i>
+                        <h4 class="mt-3">No Rides Yet</h4>
+                        <p class="text-muted">This user hasn't offered any rides yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Cars Tab -->
+                <div class="tab-pane fade" id="cars" role="tabpanel">
+                    {% if user.cars %}
+                    <div class="cars-section">
+                        <div class="row">
+                            {% for car in user.cars %}
+                            <div class="col-lg-6 col-md-12 mb-3">
+                                <div class="car-card">
+                                    <div class="car-header">
+                                        <h6 class="car-name">
+                                            <i class="bi bi-car-front me-2"></i>
+                                            {{ car.make }} {{ car.model }}
+                                        </h6>
+                                        <span class="badge bg-primary">{{ car.year }}</span>
+                                    </div>
+                                    <div class="car-body">
+                                        <div class="car-details">
+                                            <p><i class="bi bi-tag me-2"></i>{{ car.license_plate }}</p>
+                                            <p><i class="bi bi-palette me-2"></i>{{ car.color }}</p>
+                                            <p><i class="bi bi-fuel-pump me-2"></i>{{ car.fuel_type|title }} ({{
+                                                car.mileage }} km/l)</p>
+                                            <p>
+                                                <i class="bi bi-snow me-2"></i>
+                                                {% if car.ac %}AC Available{% else %}No AC{% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-gear display-1 text-muted"></i>
+                        <h4 class="mt-3">No Cars Registered</h4>
+                        <p class="text-muted">This user hasn't registered any cars yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Contact Tab -->
+                {% if current_user.is_authenticated and current_user.id != user.id %}
+                <div class="tab-pane fade" id="contact" role="tabpanel">
+                    <div class="contact-section">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="contact-info-card">
+                                    <h6 class="mb-3">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Contact Information
+                                    </h6>
+                                    <div class="contact-details">
+                                        <p><i class="bi bi-envelope me-2"></i>{{ user.email }}</p>
+                                        {% if user.phone %}
+                                        <p><i class="bi bi-telephone me-2"></i>{{ user.phone }}</p>
+                                        {% else %}
+                                        <p class="text-muted"><i class="bi bi-telephone me-2"></i>Phone not provided</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="contact-actions-card">
+                                    <h6 class="mb-3">
+                                        <i class="bi bi-chat me-2"></i>
+                                        Quick Actions
+                                    </h6>
+                                    <div class="contact-actions">
+                                        <a href="mailto:{{ user.email }}" class="btn btn-outline-primary w-100 mb-2">
+                                            <i class="bi bi-envelope me-2"></i>Send Email
+                                        </a>
+                                        {% if user.phone %}
+                                        <a href="tel:{{ user.phone }}" class="btn btn-outline-success w-100 mb-2">
+                                            <i class="bi bi-telephone me-2"></i>Call
+                                        </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('search_rides') }}?driver={{ user.id }}"
+                                            class="btn btn-outline-info w-100">
+                                            <i class="bi bi-search me-2"></i>Find Their Rides
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Trust & Safety Section -->
+{% if current_user.is_authenticated and current_user.id != user.id %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>
+                    Trust & Safety
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="safety-item text-center">
+                            <i class="bi bi-flag-fill text-success fs-1 mb-2"></i>
+                            <h6>Green Flags</h6>
+                            <p class="text-muted">{{ user.green_flags }} positive reports</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="safety-item text-center">
+                            <i class="bi bi-flag-fill text-danger fs-1 mb-2"></i>
+                            <h6>Red Flags</h6>
+                            <p class="text-muted">{{ user.red_flags }} negative reports</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="safety-item text-center">
+                            <i class="bi bi-shield-check text-primary fs-1 mb-2"></i>
+                            <h6>Trust Score</h6>
+                            <p class="text-muted">
+                                {% set total_flags = user.green_flags + user.red_flags %}
+                                {% if total_flags > 0 %}
+                                {{ ((user.green_flags / total_flags) * 100)|int }}% positive
+                                {% else %}
+                                No reviews yet
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-outline-warning" onclick="reportUser({{ user.id }})">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Report User
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script type="text/javascript">
+    function reportUser(userId) {
+        if (confirm('Are you sure you want to report this user? This action should only be used for serious violations.')) {
+            window.location.href = "{{ url_for('submit_report') }}?user_id=" + userId;
+        }
+    }
+
+    // Auto-refresh profile data every 60 seconds
+    setInterval(function () {
+        // Only refresh if user is on profile page
+        if (window.location.pathname.includes('/user/')) {
+            location.reload();
+        }
+    }, 60000);
+</script>
+
+<style>
+    /* Profile-specific styles */
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: var(--text-light);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .profile-name {
+        color: var(--text-light) !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .rating-display {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .rating-stars {
+        font-size: 1.2rem;
+    }
+
+    .rating-text {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .user-badges .badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+    /* Review Cards */
+    .review-card {
+        background: var(--bg-white);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .review-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .reviewer-info h6 {
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+
+    .stars {
+        font-size: 1rem;
+    }
+
+    .review-comment {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .review-footer {
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+    }
+
+    /* Ride Summary Cards */
+    .ride-summary-card {
+        background: var(--bg-white);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .ride-summary-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .ride-summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .ride-route {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .ride-details p {
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .ride-details i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    /* Car Cards */
+    .car-card {
+        background: var(--bg-white);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .car-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .car-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .car-name {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .car-details p {
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .car-details i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    /* Contact Cards */
+    .contact-info-card,
+    .contact-actions-card {
+        background: var(--bg-white);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        height: 100%;
+    }
+
+    .contact-details p {
+        margin-bottom: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .contact-details i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    .contact-actions .btn {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Safety Items */
+    .safety-item {
+        padding: 1rem;
+    }
+
+    .safety-item h6 {
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .safety-item p {
+        margin-bottom: 0;
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .profile-name {
+            font-size: 1.75rem;
+        }
+
+        .rating-display {
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .user-badges {
+            text-align: center;
+        }
+
+        .review-header,
+        .ride-summary-header,
+        .car-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .contact-info-card,
+        .contact-actions-card {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %}

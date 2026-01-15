@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <!-- Back Button -->
+            <a href="{{ url_for('my_bookings') }}" class="btn btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left me-2"></i>Back to My Bookings
+            </a>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Ride Details Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Ride Details
+                        <span class="badge bg-{{ 'success' if booking.passenger_ride_status == 'COMPLETED' else ('primary' if booking.status == 'CONFIRMED' else ('danger' if booking.status == 'CANCELLED' else 'warning')) }} float-end">
+                            {{ booking.passenger_ride_status|title if booking.passenger_ride_status == 'COMPLETED' else booking.status|title }}
+                        </span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-geo-alt-fill text-success me-2"></i>Route</h5>
+                            <p class="mb-1"><strong>From:</strong> {{ booking.ride.start_location }}</p>
+                            <p class="mb-1"><strong>To:</strong> {{ booking.ride.end_location }}</p>
+                            <p class="mb-3"><strong>Distance:</strong> {{ "%.1f"|format(booking.ride.distance) }} km</p>
+                            
+                            <h5><i class="bi bi-calendar-event me-2"></i>Schedule</h5>
+                            <p class="mb-1"><strong>Start:</strong> {{ booking.ride.start_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                            <p class="mb-1"><strong>Est. Duration:</strong> {{ booking.ride.get_estimated_time() }} minutes</p>
+                            <p class="mb-3"><strong>Est. End:</strong> {{ booking.ride.get_estimated_end_time().strftime('%I:%M %p') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-person-circle me-2"></i>Driver Information</h5>
+                            <p class="mb-1"><strong>Name:</strong> {{ booking.ride.driver.username }}</p>
+                            <p class="mb-1"><strong>Email:</strong> {{ booking.ride.driver.email }}</p>
+                            <p class="mb-3">
+                                <strong>Trust:</strong> 
+                                <span class="badge bg-success">
+                                    <i class="bi bi-flag-fill"></i> {{ booking.ride.driver.green_flags or 0 }}
+                                </span>
+                                {% if booking.ride.driver.red_flags and booking.ride.driver.red_flags > 0 %}
+                                <span class="badge bg-danger ms-1">
+                                    <i class="bi bi-flag-fill"></i> {{ booking.ride.driver.red_flags }}
+                                </span>
+                                {% endif %}
+                            </p>
+                            
+                            <h5><i class="bi bi-info-circle me-2"></i>Your Booking</h5>
+                            <p class="mb-1"><strong>Seats:</strong> {{ booking.seats }}</p>
+                            <p class="mb-1"><strong>Price:</strong> ₹{{ "%.2f"|format(booking.ride.price_per_seat * booking.seats) }}</p>
+                            <p class="mb-1"><strong>Pickup:</strong> {{ booking.pickup_address }}</p>
+                            <p class="mb-1"><strong>Drop:</strong> {{ booking.drop_address }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Complete Ride Button -->
+                    {% if booking.ride.status == 'ONGOING' and booking.status == 'CONFIRMED' and booking.passenger_ride_status != 'COMPLETED' %}
+                        <div class="mt-4 text-center">
+                            <form method="POST" action="{{ url_for('mark_booking_complete', booking_id=booking.id) }}">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-check-circle me-2"></i>Complete Ride
+                                </button>
+                            </form>
+                            <p class="text-muted mt-2">Click here once you've reached your destination</p>
+                        </div>
+                    {% elif booking.passenger_ride_status == 'COMPLETED' %}
+                        <div class="mt-4">
+                            <div class="alert alert-success text-center">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                You have completed this ride. Thank you for traveling with us!
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Co-Passengers Section -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people-fill me-2"></i>Co-Passengers ({{ co_passengers|length }})
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if co_passengers %}
+                        <div class="row">
+                            {% for co_booking in co_passengers %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="card-title mb-1">
+                                                    <i class="bi bi-person-circle me-2"></i>{{ co_booking.passenger.username }}
+                                                </h6>
+                                                <span class="badge bg-{{ 'success' if co_booking.passenger_ride_status == 'COMPLETED' else ('primary' if co_booking.status == 'CONFIRMED' else 'warning') }}">
+                                                    {{ co_booking.passenger_ride_status|title if co_booking.passenger_ride_status == 'COMPLETED' else co_booking.status|title }}
+                                                </span>
+                                            </div>
+                                            {% if co_booking.passenger.green_flags > 0 or co_booking.passenger.red_flags > 0 %}
+                                            <span class="badge bg-{{ 'success' if co_booking.passenger.green_flags >= co_booking.passenger.red_flags else 'danger' }}">
+                                                <i class="bi bi-flag-fill"></i> {{ co_booking.passenger.green_flags }}/{{ co_booking.passenger.red_flags }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="passenger-details">
+                                            <p class="mb-2 small">
+                                                <i class="bi bi-person-badge me-2 text-muted"></i>
+                                                <strong>Seats:</strong> {{ co_booking.seats }}
+                                            </p>
+                                            {% if co_booking.pickup_address %}
+                                            <p class="mb-2 small">
+                                                <i class="bi bi-geo-alt me-2 text-success"></i>
+                                                <strong>Pickup:</strong> {{ co_booking.pickup_address }}
+                                            </p>
+                                            {% endif %}
+                                            {% if co_booking.drop_address %}
+                                            <p class="mb-2 small">
+                                                <i class="bi bi-geo-alt-fill me-2 text-danger"></i>
+                                                <strong>Drop:</strong> {{ co_booking.drop_address }}
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-people display-1 text-muted"></i>
+                            <p class="text-muted mt-3">No other passengers for this ride</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.passenger-details p {
+    word-break: break-word;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}

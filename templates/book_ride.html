@@ -1,0 +1,217 @@
+<!--
+Booking Form Template for Carpooling Application
+
+This template handles the ride booking process with the following features:
+1. Ride Details Display:
+   - Origin and destination
+   - Date and time
+   - Driver information
+   - Car details
+   - Distance
+   - Available seats
+   - Estimated fare per person
+
+2. Booking Form:
+   - Number of seats selection
+   - Contact number input
+   - Pickup address input
+   - Drop address input
+   - Dynamic total estimated fare calculation
+
+3. JavaScript Features:
+   - Dynamic total estimated fare calculation based on seats
+   - Form validation
+   - User feedback
+
+Dependencies:
+- Bootstrap 5 for styling
+- Bootstrap Icons for visual elements
+- Flask-WTF for form handling
+-->
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Book Your Ride</h5>
+                </div>
+                <div class="card-body">
+                    <div class="ride-details mb-4">
+                        <h6>Ride Details</h6>
+                        <p><i class="bi bi-geo-alt me-2"></i>{{ ride.start_location }} → {{ ride.end_location }}</p>
+                        <p><i class="bi bi-calendar me-2"></i>{{ ride.start_date.strftime('%B %d, %Y at %I:%M %p') }}
+                        </p>
+
+                        <!-- Package Duration Information -->
+                        <p>
+                            <i class="bi bi-calendar-range me-2"></i>Package:
+                            <span class="badge bg-primary">{{ ride.package_type|capitalize }}</span>
+                            {% if ride.package_type == 'weekly' %}
+                            <span class="text-muted">(7 days: {{ ride.start_date.strftime('%b %d') }} - {{
+                                ride.end_date.strftime('%b %d, %Y') }})</span>
+                            {% elif ride.package_type == 'biweekly' %}
+                            <span class="text-muted">(14 days: {{ ride.start_date.strftime('%b %d') }} - {{
+                                ride.end_date.strftime('%b %d, %Y') }})</span>
+                            {% elif ride.package_type == 'monthly' %}
+                            <span class="text-muted">(30 days: {{ ride.start_date.strftime('%b %d') }} - {{
+                                ride.end_date.strftime('%b %d, %Y') }})</span>
+                            {% endif %}
+                        </p>
+
+                        <p><i class="bi bi-person me-2"></i>Driver: {{ ride.driver.username }}</p>
+                        <p><i class="bi bi-car-front me-2"></i>Car: {{ ride.car.make }} {{ ride.car.model }}
+                            <span class="text-muted">({{ ride.car.mileage }} km/l)</span>
+                        </p>
+                        <p>
+                            <i class="bi bi-currency-rupee me-2"></i>Fare per seat:
+                            <strong>₹{{ "%.2f"|format(ride.price_per_seat) }}</strong>
+                            <span class="text-muted">(for the entire {{ ride.package_type }} package)</span>
+                        </p>
+                        <p><i class="bi bi-person-plus me-2"></i>Available Seats: {{ ride.available_seats }}</p>
+                    </div>
+
+                    <form method="POST" id="booking-form" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="seats" class="form-label">Number of Seats</label>
+                            <input type="number" class="form-control" id="seats" name="seats" min="1"
+                                max="{{ ride.available_seats }}" value="1" required>
+                            <div class="invalid-feedback">
+                                Please select a valid number of seats (1-{{ ride.available_seats }})
+                            </div>
+                            <div class="form-text">Total fare: ₹<span id="total-fare">{{
+                                    "%.2f"|format(ride.price_per_seat) }}</span></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="contact" class="form-label">Contact Number</label>
+                            <input type="tel" class="form-control" id="contact" name="contact" pattern="[0-9]{10}"
+                                required>
+                            <div class="invalid-feedback">
+                                Please enter a valid 10-digit contact number
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pickup_address" class="form-label">Pickup Address</label>
+                            <input type="text" class="form-control" id="pickup_address" name="pickup_address" required
+                                placeholder="Enter your pickup address">
+                            <div class="invalid-feedback">
+                                Please enter your pickup address
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="drop_address" class="form-label">Drop Address</label>
+                            <input type="text" class="form-control" id="drop_address" name="drop_address" required
+                                placeholder="Enter your drop address">
+                            <div class="invalid-feedback">
+                                Please enter your drop address
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Book Now</button>
+                            <a href="{{ url_for('search_rides') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Route Map (Optional)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" style="height: 400px;"></div>
+                    <div class="p-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            You can use the map to visualize the route, but it's optional. Your text addresses will be
+                            used for booking.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Partner Ad Widget -->
+            <div class="ad-sidebar mt-4">
+                <div class="ad-sidebar-image" style="background: linear-gradient(135deg, #D1FAE5 0%, #FEF3C7 100%);">
+                    <i class="bi bi-fuel-pump-fill text-success"></i>
+                </div>
+                <h6 class="ad-sidebar-title">Save on Fuel!</h6>
+                <span class="ad-sidebar-offer">5% Cashback</span>
+                <p class="ad-sidebar-text">Refuel at PetroMax stations along your route and get exclusive cashback for
+                    carpoolers!</p>
+                <button class="ad-sidebar-btn" onclick="window.open('#', '_blank')">
+                    <i class="bi bi-geo-alt me-2"></i>Find Stations
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Ad Banner -->
+    <div class="ad-strip mt-4">
+        <div class="ad-strip-content">
+            <i class="bi bi-building ad-strip-icon"></i>
+            <div class="ad-strip-text">
+                <h5><i class="bi bi-star-fill me-1"></i>Long Trip? Book a Stay!</h5>
+                <p>Get 15% off at StayEasy partner hotels along your route. Perfect for overnight journeys!</p>
+            </div>
+        </div>
+        <button class="ad-strip-btn" onclick="window.open('#', '_blank')">
+            <i class="bi bi-calendar-check me-2"></i>Browse Hotels
+        </button>
+    </div>
+</div>
+
+<!-- Form validation script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('booking-form');
+        const seatsInput = document.getElementById('seats');
+        const farePerSeat = parseFloat('{{ "%.2f"|format(ride.price_per_seat) }}');
+
+        // Update total fare when seats change
+        seatsInput.addEventListener('input', function () {
+            const totalFare = (this.value * farePerSeat).toFixed(2);
+            document.getElementById('total-fare').textContent = totalFare;
+        });
+
+        // Form validation
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+</script>
+
+<!-- Map view is optional - using Leaflet for maps now -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('map').innerHTML = `
+        <div class="alert alert-info m-3">
+            <h6 class="alert-heading"><i class="bi bi-map"></i> Route Map</h6>
+            <p class="mb-0">Interactive route map coming soon! Your text addresses will be used for booking.</p>
+        </div>`;
+    });
+</script>
+{% endblock %}

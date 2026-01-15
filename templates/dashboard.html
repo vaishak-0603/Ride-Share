@@ -1,0 +1,381 @@
+<!--
+User Dashboard Template for Ride-Share Application
+Modern, accessible dashboard with collapsible sections and compact cards.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Ride-Share{% endblock %}:
+
+{% block content %}
+<div class="container py-4">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="dashboard-title h3 mb-1">
+                    <i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>
+                    Welcome back, {{ current_user.username }}!
+                </h1>
+                <p class="mb-0 opacity-75">Manage your rides and track your Ride-Share activity</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <span class="badge bg-light text-primary fs-6 me-2">
+                    <i class="bi bi-car-front me-1" aria-hidden="true"></i>{{ current_user.total_rides }} rides
+                </span>
+                <span class="badge bg-success fs-6 me-1">
+                    <i class="bi bi-flag-fill me-1" aria-hidden="true"></i>{{ current_user.green_flags or 0 }}
+                </span>
+                {% if current_user.red_flags and current_user.red_flags > 0 %}
+                <span class="badge bg-danger fs-6">
+                    <i class="bi bi-flag-fill me-1" aria-hidden="true"></i>{{ current_user.red_flags }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card bg-primary text-white h-100">
+                <div class="stat-card-body">
+                    <div class="stat-icon"><i class="bi bi-car-front" aria-hidden="true"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ active_rides|length }}</div>
+                        <div class="stat-label">Active Rides</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card bg-success text-white h-100">
+                <div class="stat-card-body">
+                    <div class="stat-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ active_bookings|length }}</div>
+                        <div class="stat-label">My Bookings</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card bg-info text-white h-100">
+                <div class="stat-card-body">
+                    <div class="stat-icon"><i class="bi bi-people" aria-hidden="true"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ total_passengers }}</div>
+                        <div class="stat-label">Passengers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card bg-warning text-dark h-100">
+                <div class="stat-card-body">
+                    <div class="stat-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ past_rides|length + past_bookings|length }}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mb-4">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <span class="fw-semibold text-muted small">Quick Actions:</span>
+                </div>
+                <div class="col">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('offer_ride') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Offer Ride
+                        </a>
+                        <a href="{{ url_for('search_rides') }}" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-search me-1" aria-hidden="true"></i>Find Ride
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partner Ad Strip -->
+    <div class="ad-strip">
+        <div class="ad-strip-content">
+            <i class="bi bi-fuel-pump-fill ad-strip-icon"></i>
+            <div class="ad-strip-text">
+                <h5><i class="bi bi-lightning-charge-fill me-1"></i>PetroMax Partner Offer</h5>
+                <p>Get 5% cashback on fuel at 500+ stations nationwide. Exclusive for carpoolers!</p>
+            </div>
+        </div>
+        <button class="ad-strip-btn" onclick="window.open('#', '_blank')">
+            <i class="bi bi-geo-alt me-2"></i>Find Nearest Station
+        </button>
+    </div>
+
+    <!-- Main Content - Accordion Sections -->
+    <div class="accordion" id="dashboardAccordion">
+
+        <!-- Active Rides Section -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#activeRidesSection" aria-expanded="true" aria-controls="activeRidesSection">
+                    <i class="bi bi-play-circle me-2 text-primary" aria-hidden="true"></i>
+                    <span>Active Rides</span>
+                    <span class="badge bg-primary ms-2">{{ active_rides|length }}</span>
+                </button>
+            </h2>
+            <div id="activeRidesSection" class="accordion-collapse collapse show" data-bs-parent="#dashboardAccordion">
+                <div class="accordion-body">
+                    {% if active_rides %}
+                    {% for ride in active_rides %}
+                    <div class="ride-card-compact">
+                        <div class="ride-card-compact-info">
+                            <div class="ride-card-compact-route">
+                                <i class="bi bi-geo-alt text-primary me-1" aria-hidden="true"></i>
+                                {{ ride.origin }} → {{ ride.destination }}
+                            </div>
+                            <div class="ride-card-compact-meta">
+                                <span><i class="bi bi-calendar me-1" aria-hidden="true"></i>{{
+                                    ride.start_date.strftime('%b %d, %I:%M %p') }}</span>
+                                <span><i class="bi bi-people me-1" aria-hidden="true"></i>{{ ride.available_seats }}/{{
+                                    ride.seats }} seats</span>
+                                <span
+                                    class="badge bg-{{ 'warning text-dark' if ride.status == 'ONGOING' else 'secondary' }}">{{
+                                    ride.status }}</span>
+                            </div>
+                        </div>
+                        <div class="ride-card-compact-actions">
+                            <a href="{{ url_for('view_ride', ride_id=ride.id) }}"
+                                class="btn btn-sm btn-outline-primary">View</a>
+                            {% if ride.status == 'UPCOMING' and ride.start_date <= current_time %} <form method="POST"
+                                action="{{ url_for('start_ride', ride_id=ride.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-primary">Start</button>
+                                </form>
+                                {% elif ride.status == 'ONGOING' %}
+                                <form method="POST" action="{{ url_for('end_ride', ride_id=ride.id) }}"
+                                    class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success">End</button>
+                                </form>
+                                {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-car-front empty-state-icon" aria-hidden="true"></i>
+                        <h3 class="empty-state-title h5">No Active Rides</h3>
+                        <p class="empty-state-text">You're not offering any rides right now.</p>
+                        <a href="{{ url_for('offer_ride') }}" class="btn btn-primary">Offer a Ride</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- My Bookings Section -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#bookingsSection" aria-expanded="false" aria-controls="bookingsSection">
+                    <i class="bi bi-calendar-check me-2 text-success" aria-hidden="true"></i>
+                    <span>My Bookings</span>
+                    <span class="badge bg-success ms-2">{{ active_bookings|length }}</span>
+                </button>
+            </h2>
+            <div id="bookingsSection" class="accordion-collapse collapse" data-bs-parent="#dashboardAccordion">
+                <div class="accordion-body">
+                    {% if active_bookings %}
+                    {% for booking in active_bookings %}
+                    <div class="ride-card-compact">
+                        <div class="ride-card-compact-info">
+                            <div class="ride-card-compact-route">
+                                <i class="bi bi-geo-alt text-success me-1" aria-hidden="true"></i>
+                                {{ booking.ride.origin }} → {{ booking.ride.destination }}
+                            </div>
+                            <div class="ride-card-compact-meta">
+                                <span><i class="bi bi-calendar me-1" aria-hidden="true"></i>{{
+                                    booking.ride.start_date.strftime('%b %d, %I:%M %p') }}</span>
+                                <span><i class="bi bi-person me-1" aria-hidden="true"></i>{{
+                                    booking.ride.driver.username }}</span>
+                                <span
+                                    class="badge bg-{{ 'success' if booking.status == 'CONFIRMED' else 'warning text-dark' }}">{{
+                                    booking.status }}</span>
+                            </div>
+                        </div>
+                        <div class="ride-card-compact-actions">
+                            {% if booking.ride.status == 'ONGOING' and booking.status == 'CONFIRMED' %}
+                            <form method="POST" action="{{ url_for('mark_booking_complete', booking_id=booking.id) }}"
+                                class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success">Complete</button>
+                            </form>
+                            {% endif %}
+                            {% if booking.can_cancel() %}
+                            <button class="btn btn-sm btn-outline-danger"
+                                onclick="cancelBooking({{ booking.id }})">Cancel</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-calendar-x empty-state-icon" aria-hidden="true"></i>
+                        <h3 class="empty-state-title h5">No Active Bookings</h3>
+                        <p class="empty-state-text">You haven't booked any rides yet.</p>
+                        <a href="{{ url_for('search_rides') }}" class="btn btn-success">Find a Ride</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Requests Section -->
+        {% set pending_count = namespace(value=0) %}
+        {% for ride in rides_offered %}
+        {% if ride.status not in ['COMPLETED', 'CANCELLED'] %}
+        {% for booking in ride.bookings if booking.status == 'PENDING' %}
+        {% set pending_count.value = pending_count.value + 1 %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+
+        {% if pending_count.value > 0 %}
+        <div class="accordion-item border-warning">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed bg-warning-subtle" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#pendingSection" aria-expanded="false" aria-controls="pendingSection">
+                    <i class="bi bi-hourglass-split me-2 text-warning" aria-hidden="true"></i>
+                    <span>Pending Requests</span>
+                    <span class="badge bg-warning text-dark ms-2">{{ pending_count.value }}</span>
+                </button>
+            </h2>
+            <div id="pendingSection" class="accordion-collapse collapse" data-bs-parent="#dashboardAccordion">
+                <div class="accordion-body">
+                    {% for ride in rides_offered %}
+                    {% if ride.status not in ['COMPLETED', 'CANCELLED'] %}
+                    {% for booking in ride.bookings if booking.status == 'PENDING' %}
+                    <div class="pending-request-card mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>{{ booking.passenger.username }}</strong> wants to join
+                                <div class="small text-muted">{{ ride.origin }} → {{ ride.destination }}</div>
+                            </div>
+                            <span class="badge bg-warning text-dark">{{ booking.seats }} seat(s)</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-success flex-fill" onclick="confirmBooking({{ booking.id }})">
+                                <i class="bi bi-check me-1" aria-hidden="true"></i>Accept
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger flex-fill"
+                                onclick="rejectBooking({{ booking.id }})">
+                                <i class="bi bi-x me-1" aria-hidden="true"></i>Reject
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- History Section (Collapsible) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#historySection" aria-expanded="false" aria-controls="historySection">
+                    <i class="bi bi-clock-history me-2 text-secondary" aria-hidden="true"></i>
+                    <span>History</span>
+                    <span class="badge bg-secondary ms-2">{{ past_rides|length + past_bookings|length }}</span>
+                </button>
+            </h2>
+            <div id="historySection" class="accordion-collapse collapse" data-bs-parent="#dashboardAccordion">
+                <div class="accordion-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3 class="h6 mb-3">Past Rides Offered ({{ past_rides|length }})</h3>
+                            {% if past_rides %}
+                            {% for ride in past_rides[:5] %}
+                            <a href="{{ url_for('view_ride', ride_id=ride.id) }}" class="text-decoration-none">
+                                <div class="ride-card-compact mb-2">
+                                    <div class="ride-card-compact-info">
+                                        <div class="small fw-medium text-dark">{{ ride.origin }} → {{ ride.destination
+                                            }}</div>
+                                        <div class="small text-muted">{{ ride.start_date.strftime('%b %d, %Y') }}</div>
+                                    </div>
+                                    <span
+                                        class="badge bg-{{ 'success' if ride.status == 'COMPLETED' else 'danger' }}">{{
+                                        ride.status }}</span>
+                                </div>
+                            </a>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-muted small">No past rides yet.</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h3 class="h6 mb-3">Past Bookings ({{ past_bookings|length }})</h3>
+                            {% if past_bookings %}
+                            {% for booking in past_bookings[:5] %}
+                            <div class="ride-card-compact mb-2">
+                                <div class="ride-card-compact-info">
+                                    <div class="small fw-medium">{{ booking.ride.origin }} → {{ booking.ride.destination
+                                        }}</div>
+                                    <div class="small text-muted">{{ booking.ride.start_date.strftime('%b %d, %Y') }}
+                                    </div>
+                                    {% set display_status = booking.passenger_ride_status if
+                                    booking.passenger_ride_status != 'UPCOMING' else booking.status %}
+                                    <span
+                                        class="badge bg-{{ 'success' if display_status == 'COMPLETED' else ('danger' if display_status in ['CANCELLED', 'REJECTED'] else 'secondary') }}">
+                                        {{ display_status|title }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-muted small">No past bookings yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cancelBooking(bookingId) {
+        if (confirm('Are you sure you want to cancel this booking?')) {
+            fetch('/cancel-booking/' + bookingId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(response => response.ok && location.reload());
+        }
+    }
+
+    function confirmBooking(bookingId) {
+        if (confirm('Accept this booking request?')) {
+            fetch('/booking/' + bookingId + '/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(response => response.ok && location.reload());
+        }
+    }
+
+    function rejectBooking(bookingId) {
+        if (confirm('Reject this booking request?')) {
+            fetch('/booking/' + bookingId + '/reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(response => response.ok && location.reload());
+        }
+    }
+</script>
+{% endblock %}

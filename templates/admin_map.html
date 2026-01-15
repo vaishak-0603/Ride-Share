@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Map Dashboard - Carpooling App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/map_styles.css') }}">
+<style>
+    /* Admin Map Specific Styles */
+    .admin-map-container {
+        height: calc(100vh - 200px);
+        min-height: 500px;
+        border-radius: var(--border-radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .map-controls {
+        background: var(--bg-white);
+        padding: var(--space-4);
+        border-radius: var(--border-radius-lg);
+        margin-bottom: var(--space-4);
+        box-shadow: var(--shadow-card);
+    }
+
+    .stats-card {
+        background: var(--bg-white);
+        padding: var(--space-4);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-card);
+        text-align: center;
+    }
+
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .sos-alert {
+        background: var(--danger-light);
+        border-left: 4px solid var(--danger);
+        padding: var(--space-3);
+        margin-bottom: var(--space-3);
+        border-radius: var(--border-radius);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-0">
+                <i class="bi bi-map"></i> Admin Map Dashboard
+            </h2>
+            <p class="text-muted">Monitor all rides and SOS emergencies in real-time</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="total-rides">{{ rides|length }}</div>
+                <div class="text-muted">Active Rides</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number text-danger" id="sos-count">{{ sos_users|length }}</div>
+                <div class="text-muted">SOS Alerts</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number text-success" id="ongoing-rides">
+                    {{ rides|selectattr('status', 'equalto', 'ONGOING')|list|length }}
+                </div>
+                <div class="text-muted">Ongoing Rides</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number text-info" id="upcoming-rides">
+                    {{ rides|selectattr('status', 'equalto', 'UPCOMING')|list|length }}
+                </div>
+                <div class="text-muted">Upcoming Rides</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOS Alerts Section -->
+    {% if sos_users %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i> Active SOS Emergencies
+            </h5>
+            {% for user in sos_users %}
+            <div class="sos-alert">
+                <strong>{{ user.username }}</strong> - {{ user.sos_location }}
+                <br>
+                <small>{{ user.sos_message }} ({{ user.sos_timestamp.strftime('%I:%M %p') }})</small>
+                <button class="btn btn-sm btn-danger float-end" onclick="viewSOSOnMap({{ user.id }})">
+                    <i class="bi bi-geo-alt"></i> Locate
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Map Controls -->
+    <div class="map-controls">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <label class="form-label">Filter by Location</label>
+                <input type="text" id="location-filter" class="form-control"
+                    placeholder="Enter location to filter rides...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Filter by Status</label>
+                <select id="status-filter" class="form-select">
+                    <option value="all">All Rides</option>
+                    <option value="UPCOMING">Upcoming</option>
+                    <option value="ONGOING">Ongoing</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Show</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="show-routes" checked>
+                    <label class="form-check-label" for="show-routes">
+                        Show Routes
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="refreshMap()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div class="row">
+        <div class="col-12">
+            <div id="admin-map" class="admin-map-container"></div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6>Map Legend:</h6>
+                    <span class="badge bg-primary me-2">
+                        <i class="bi bi-geo-alt-fill"></i> Pickup Location
+                    </span>
+                    <span class="badge bg-success me-2">
+                        <i class="bi bi-geo-alt-fill"></i> Drop Location
+                    </span>
+                    <span class="badge bg-danger me-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i> SOS Emergency
+                    </span>
+                    <span class="badge" style="background: var(--primary);">
+                        <i class="bi bi-dash-lg"></i> Route
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script id="rides-data" type="application/json">
+    {{ rides|tojson|safe }}
+</script>
+
+<script id="sos-data" type="application/json">
+    {{ sos_users|tojson|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/map_utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin_map.js') }}"></script>
+{% endblock %}

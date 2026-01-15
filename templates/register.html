@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-car-front-fill"></i>
+            </div>
+            <h2 class="auth-title">Create Account</h2>
+            <p class="auth-subtitle">Join our Ride-Share community</p>
+        </div>
+
+        <div class="auth-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+                role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('register') }}" class="auth-form" novalidate>
+                {{ form.hidden_tag() }}
+
+                <div class="form-group-modern">
+                    <label for="username" class="form-label-modern">
+                        <i class="bi bi-person me-2"></i>Username
+                    </label>
+                    {{ form.username(class="form-control-modern" + (" is-invalid" if form.username.errors else ""),
+                    placeholder="Choose a username", id="username") }}
+                    {% if form.username.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.username.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <small class="text-muted">Username must be 3-20 characters long</small>
+                </div>
+
+                <div class="form-group-modern">
+                    <label for="email" class="form-label-modern">
+                        <i class="bi bi-envelope me-2"></i>Email Address
+                    </label>
+                    {{ form.email(class="form-control-modern" + (" is-invalid" if form.email.errors else ""),
+                    placeholder="Enter your email", id="email") }}
+                    {% if form.email.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.email.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group-modern">
+                    <label for="password" class="form-label-modern">
+                        <i class="bi bi-lock me-2"></i>Password
+                    </label>
+                    <div class="password-input-wrapper">
+                        {{ form.password(class="form-control-modern" + (" is-invalid" if form.password.errors else ""),
+                        placeholder="Choose a strong password", id="password", type="password") }}
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.password.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <small class="text-muted">Password must be at least 6 characters long</small>
+                </div>
+
+                <div class="form-group-modern">
+                    <label for="confirm_password" class="form-label-modern">
+                        <i class="bi bi-lock-fill me-2"></i>Confirm Password
+                    </label>
+                    <div class="password-input-wrapper">
+                        {{ form.confirm_password(class="form-control-modern" + (" is-invalid" if
+                        form.confirm_password.errors else ""), placeholder="Confirm your password",
+                        id="confirm_password", type="password") }}
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirm_password')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.confirm_password.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.confirm_password.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {{ form.submit(class="btn-modern btn-primary-modern w-100", value="Create Account") }}
+            </form>
+
+            <div class="auth-divider">
+                <span>or</span>
+            </div>
+
+            <div class="auth-footer">
+                <p class="auth-link">
+                    Already have an account?
+                    <a href="{{ url_for('login') }}" class="link-primary-modern">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const button = field.parentElement.querySelector('.password-toggle');
+        const icon = button.querySelector('i');
+
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            field.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+
+    // Auto-dismiss alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function (alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+</script>
+{% endblock %}

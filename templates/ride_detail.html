@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Back Button -->
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+
+            <!-- Ride Details Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-car-front me-2"></i>Ride Details
+                        <span class="badge bg-{{ 'success' if ride.status == 'COMPLETED' else ('danger' if ride.status == 'CANCELLED' else ('primary' if ride.status == 'ONGOING' else 'secondary')) }} float-end">
+                            {{ ride.status|title }}
+                        </span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-geo-alt-fill text-success me-2"></i>Route</h5>
+                            <p class="mb-1"><strong>From:</strong> {{ ride.start_location }}</p>
+                            <p class="mb-3"><strong>To:</strong> {{ ride.end_location }}</p>
+                            <p class="mb-3"><strong>Distance:</strong> {{ "%.1f"|format(ride.distance) }} km</p>
+                            
+                            <h5><i class="bi bi-calendar-event me-2"></i>Schedule</h5>
+                            <p class="mb-1"><strong>Start:</strong> {{ ride.start_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                            <p class="mb-1"><strong>Est. Duration:</strong> {{ ride.get_estimated_time() }} minutes</p>
+                            <p class="mb-1"><strong>Est. End:</strong> {{ ride.get_estimated_end_time().strftime('%B %d, %Y at %I:%M %p') }}</p>
+                            <p class="mb-3"><strong>Scheduled End:</strong> {{ ride.end_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-info-circle me-2"></i>Ride Information</h5>
+                            <p class="mb-1"><strong>Package Type:</strong> <span class="badge bg-info">{{ ride.package_type|title }}</span></p>
+                            <p class="mb-1"><strong>Total Seats:</strong> {{ ride.seats }}</p>
+                            <p class="mb-1"><strong>Price per Seat:</strong> ₹{{ "%.2f"|format(ride.price_per_seat) }}</p>
+                            <p class="mb-1"><strong>Car:</strong> {{ ride.car.make }} {{ ride.car.model }} ({{ ride.car.license_plate }})</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Passengers Section -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people-fill me-2"></i>Passengers 
+                        ({{ bookings|selectattr('status', 'in', ['CONFIRMED', 'COMPLETED'])|list|length }} confirmed, 
+                        {{ bookings|selectattr('status', 'equalto', 'PENDING')|list|length }} pending)
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Pending Bookings (for active rides) -->
+                {% set pending_bookings = bookings|selectattr('status', 'equalto', 'PENDING')|list %}
+                {% if pending_bookings and ride.status not in ['COMPLETED', 'CANCELLED'] %}
+                        <div class="mb-4">
+                            <h5 class="text-warning mb-3">
+                                <i class="bi bi-hourglass-split me-2"></i>Pending Requests ({{ pending_bookings|length }})
+                            </h5>
+                            <div class="row">
+                                {% for booking in pending_bookings %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="card-title mb-1">
+                                                        <i class="bi bi-person-circle me-2"></i>{{ booking.passenger.username }}
+                                                    </h6>
+                                                    <span class="badge bg-warning text-dark">Pending</span>
+                                                </div>
+                                                {% if booking.passenger.green_flags > 0 or booking.passenger.red_flags > 0 %}
+                                                <span class="badge bg-{{ 'success' if booking.passenger.green_flags > booking.passenger.red_flags else 'danger' }}">
+                                                    <i class="bi bi-flag-fill"></i> {{ booking.passenger.green_flags }} / {{ booking.passenger.red_flags }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            <p class="mb-2 small">
+                                                <i class="bi bi-envelope me-2"></i>{{ booking.passenger.email }}
+                                            </p>
+                                            <p class="mb-2 small">
+                                                <i class="bi bi-person-badge me-2"></i><strong>Seats:</strong> {{ booking.seats }}
+                                            </p>
+                                            {% if booking.pickup_address %}
+                                            <p class="mb-2 small">
+                                                <i class="bi bi-geo-alt me-2 text-success"></i><strong>Pickup:</strong> {{ booking.pickup_address }}
+                                            </p>
+                                            {% endif %}
+                                            {% if booking.drop_address %}
+                                            <p class="mb-2 small">
+                                                <i class="bi bi-geo-alt-fill me-2 text-danger"></i><strong>Drop:</strong> {{ booking.drop_address }}
+                                            </p>
+                                            {% endif %}
+                                            <div class="d-flex gap-2 mt-3">
+                                                <button class="btn btn-success btn-sm flex-fill" onclick="confirmBooking({{ booking.id }})">
+                                                    <i class="bi bi-check-circle me-1"></i>Accept
+                                                </button>
+                                                <button class="btn btn-danger btn-sm flex-fill" onclick="rejectBooking({{ booking.id }})">
+                                                    <i class="bi bi-x-circle me-1"></i>Reject
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Confirmed/Completed Bookings -->
+                    {% set confirmed_bookings = bookings|selectattr('status', 'in', ['CONFIRMED', 'COMPLETED'])|list %}
+                    {% if confirmed_bookings %}
+                        <h5 class="text-success mb-3">
+                            <i class="bi bi-check-circle me-2"></i>Confirmed Passengers ({{ confirmed_bookings|length }})
+                        </h5>
+                        <div class="row">
+                            {% for booking in confirmed_bookings %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card border-{{ 'success' if booking.status == 'COMPLETED' else 'primary' }}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h5 class="card-title mb-1">
+                                                    <i class="bi bi-person-circle me-2"></i>{{ booking.passenger.username }}
+                                                </h5>
+                                                <span class="badge bg-{{ 'success' if booking.status == 'COMPLETED' else 'primary' }}">
+                                                    {{ booking.status|title }}
+                                                </span>
+                                            </div>
+                                            {% if booking.passenger.green_flags > 0 or booking.passenger.red_flags > 0 %}
+                                            <div class="text-end">
+                                                <span class="badge bg-{{ 'success' if booking.passenger.green_flags >= booking.passenger.red_flags else 'danger' }}">
+                                                    <i class="bi bi-flag-fill me-1"></i>{{ booking.passenger.green_flags }}<i class="bi bi-flag-fill text-success mx-1"></i>{{ booking.passenger.red_flags }}<i class="bi bi-flag-fill text-danger ms-1"></i>
+                                                </span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="passenger-details mb-3">
+                                            <p class="mb-2">
+                                                <i class="bi bi-envelope me-2 text-muted"></i>
+                                                <small>{{ booking.passenger.email }}</small>
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="bi bi-person-badge me-2 text-muted"></i>
+                                                <small><strong>Seats Booked:</strong> {{ booking.seats }}</small>
+                                            </p>
+                                            {% if booking.pickup_address %}
+                                            <p class="mb-2">
+                                                <i class="bi bi-geo-alt me-2 text-success"></i>
+                                                <small><strong>Pickup:</strong> {{ booking.pickup_address }}</small>
+                                            </p>
+                                            {% endif %}
+                                            {% if booking.drop_address %}
+                                            <p class="mb-2">
+                                                <i class="bi bi-geo-alt-fill me-2 text-danger"></i>
+                                                <small><strong>Drop:</strong> {{ booking.drop_address }}</small>
+                                            </p>
+                                            {% endif %}
+                                            <p class="mb-2">
+                                                <i class="bi bi-calendar-check me-2 text-muted"></i>
+                                                <small><strong>Booked on:</strong> {{ booking.created_at.strftime('%B %d, %Y') }}</small>
+                                            </p>
+                                        </div>
+
+                                        <!-- Review Button -->
+                                        {% if ride.status == 'COMPLETED' %}
+                                            {% if booking.passenger_id in reviewed_passengers %}
+                                                <div class="alert alert-success py-2 mb-0">
+                                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                                    <small>You have reviewed this passenger</small>
+                                                </div>
+                                            {% else %}
+                                                <a href="{{ url_for('rate_passenger', booking_id=booking.id) }}" 
+                                                   class="btn btn-success btn-sm w-100">
+                                                    <i class="bi bi-flag me-2"></i>Rate Passenger
+                                                </a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-people display-1 text-muted"></i>
+                            <p class="text-muted mt-3">No confirmed passengers for this ride</p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Cancelled/Rejected Bookings -->
+                    {% set cancelled_bookings = bookings|selectattr('status', 'in', ['CANCELLED', 'REJECTED'])|list %}
+                    {% if cancelled_bookings %}
+                        <div class="mt-4">
+                            <div class="d-grid mb-2">
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#cancelledBookingsCollapse" aria-expanded="false" aria-controls="cancelledBookingsCollapse">
+                                    <i class="bi bi-x-circle me-2"></i>Show Cancelled/Rejected Bookings ({{ cancelled_bookings|length }})
+                                </button>
+                            </div>
+                            <div class="collapse" id="cancelledBookingsCollapse">
+                                <div class="list-group">
+                                    {% for booking in cancelled_bookings %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div class="mb-2">
+                                                    <i class="bi bi-person-x me-2 text-muted"></i>
+                                                    <strong>{{ booking.passenger.username }}</strong> - {{ booking.seats }} seat(s)
+                                                </div>
+                                                {% if booking.pickup_address %}
+                                                <p class="mb-1 small text-muted">
+                                                    <i class="bi bi-geo-alt me-1"></i>Pickup: {{ booking.pickup_address }}
+                                                </p>
+                                                {% endif %}
+                                                {% if booking.drop_address %}
+                                                <p class="mb-1 small text-muted">
+                                                    <i class="bi bi-geo-alt-fill me-1"></i>Drop: {{ booking.drop_address }}
+                                                </p>
+                                                {% endif %}
+                                                <p class="mb-0 small text-muted">
+                                                    <i class="bi bi-calendar-x me-1"></i>Booked on: {{ booking.created_at.strftime('%b %d, %Y') }}
+                                                </p>
+                                            </div>
+                                            <span class="badge bg-{{ 'secondary' if booking.status == 'REJECTED' else 'danger' }}">{{ booking.status|title }}</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar with Ads -->
+        <div class="col-lg-4">
+            <!-- Fuel Partner Ad -->
+            <div class="ad-sidebar">
+                <div class="ad-sidebar-image">
+                    <i class="bi bi-fuel-pump-fill text-success"></i>
+                </div>
+                <h6 class="ad-sidebar-title">PetroMax Fuel Stations</h6>
+                <span class="ad-sidebar-offer">5% Cashback</span>
+                <p class="ad-sidebar-text">Refuel at any PetroMax station along your route and save money!</p>
+                <button class="ad-sidebar-btn" onclick="window.open('#', '_blank')">
+                    <i class="bi bi-geo-alt me-2"></i>Find Nearest Station
+                </button>
+            </div>
+            
+            <!-- Hotel Partner Ad -->
+            <div class="ad-sidebar">
+                <div class="ad-sidebar-image" style="background: linear-gradient(135deg, #FEE2E2 0%, #FEF3C7 100%);">
+                    <i class="bi bi-building text-danger"></i>
+                </div>
+                <h6 class="ad-sidebar-title">StayEasy Hotels</h6>
+                <span class="ad-sidebar-offer">15% Off Bookings</span>
+                <p class="ad-sidebar-text">Long trip? Rest easy at our partner hotels along your route.</p>
+                <button class="ad-sidebar-btn" onclick="window.open('#', '_blank')">
+                    <i class="bi bi-calendar-check me-2"></i>Book a Room
+                </button>
+            </div>
+            
+            <!-- Food Partner Ad -->
+            <div class="ad-sidebar">
+                <div class="ad-sidebar-image" style="background: linear-gradient(135deg, #FEF3C7 0%, #D1FAE5 100%);">
+                    <i class="bi bi-cup-hot text-warning"></i>
+                </div>
+                <h6 class="ad-sidebar-title">Highway Dhabas</h6>
+                <span class="ad-sidebar-offer">Free Chai/Coffee</span>
+                <p class="ad-sidebar-text">Stop at partner dhabas for refreshments on your journey!</p>
+                <button class="ad-sidebar-btn" onclick="window.open('#', '_blank')">
+                    <i class="bi bi-geo me-2"></i>View Locations
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.history-item.cursor-pointer:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.passenger-details p {
+    word-break: break-word;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+</style>
+
+<script>
+function confirmBooking(bookingId) {
+    if (confirm('Are you sure you want to accept this booking?')) {
+        fetch('/booking/' + bookingId + '/confirm', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(function(response) {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error accepting booking');
+            }
+        });
+    }
+}
+
+function rejectBooking(bookingId) {
+    if (confirm('Are you sure you want to reject this booking?')) {
+        fetch('/booking/' + bookingId + '/reject', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(function(response) {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error rejecting booking');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

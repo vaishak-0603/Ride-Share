@@ -1,0 +1,549 @@
+<!--
+Offer Ride Form - Ride-Share Application
+Modern, accessible form with accordion sections for better organization.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Offer a Ride - Ride-Share{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="h3 mb-1">
+            <i class="bi bi-plus-circle text-primary me-2" aria-hidden="true"></i>
+            Offer a Ride
+        </h1>
+        <p class="text-muted mb-0">Share your journey and split costs with fellow travelers</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="needs-validation" id="offerRideForm" novalidate>
+        <div class="accordion" id="offerRideAccordion">
+
+            <!-- Section 1: Route Details -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#routeSection" aria-expanded="true" aria-controls="routeSection">
+                        <i class="bi bi-geo-alt me-2 text-primary" aria-hidden="true"></i>
+                        <span>Route Details</span>
+                        <span class="badge bg-secondary ms-2">Step 1</span>
+                    </button>
+                </h2>
+                <div id="routeSection" class="accordion-collapse collapse show" data-bs-parent="#offerRideAccordion">
+                    <div class="accordion-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="origin" class="form-label">Origin <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-geo-alt"
+                                            aria-hidden="true"></i></span>
+                                    <input type="text" class="form-control" id="origin" name="origin"
+                                        placeholder="Starting location" required aria-describedby="originHelp">
+                                </div>
+                                <div id="originHelp" class="form-text">Where will your journey begin?</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="destination" class="form-label">Destination <span
+                                        class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-geo" aria-hidden="true"></i></span>
+                                    <input type="text" class="form-control" id="destination" name="destination"
+                                        placeholder="Ending location" required aria-describedby="destHelp">
+                                </div>
+                                <div id="destHelp" class="form-text">Your final destination</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="distance" class="form-label">Distance (km) <span
+                                        class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-signpost-split"
+                                            aria-hidden="true"></i></span>
+                                    <input type="number" class="form-control" id="distance" name="distance" min="1"
+                                        step="0.1" placeholder="e.g., 25" required>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="useMap" name="useMap">
+                                    <label class="form-check-label" for="useMap">
+                                        <i class="bi bi-map me-1" aria-hidden="true"></i>
+                                        Use map to select locations (optional)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Map Container (hidden by default) -->
+                        <div id="mapContainer" class="mt-3" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="origin-search" class="form-label">Search Origin</label>
+                                    <input type="text" class="form-control" id="origin-search"
+                                        placeholder="Search for starting location">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="destination-search" class="form-label">Search Destination</label>
+                                    <input type="text" class="form-control" id="destination-search"
+                                        placeholder="Search for destination">
+                                </div>
+                                <div class="col-12">
+                                    <div id="map" style="height: 350px; width: 100%; border-radius: 8px;"
+                                        role="application" aria-label="Route selection map"></div>
+                                    <p id="estimated-duration" class="mt-2 text-muted"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Schedule & Package -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#scheduleSection" aria-expanded="false" aria-controls="scheduleSection">
+                        <i class="bi bi-calendar-event me-2 text-success" aria-hidden="true"></i>
+                        <span>Schedule & Package</span>
+                        <span class="badge bg-secondary ms-2">Step 2</span>
+                    </button>
+                </h2>
+                <div id="scheduleSection" class="accordion-collapse collapse" data-bs-parent="#offerRideAccordion">
+                    <div class="accordion-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="package_type" class="form-label">Package Type <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="package_type" name="package_type" required>
+                                    <option value="daily">Daily (1 day) - Driver pays 50%</option>
+                                    <option value="weekly">Weekly (7 days) - Driver pays 25%</option>
+                                    <option value="biweekly">Bi-Weekly (14 days) - Driver pays 25%</option>
+                                    <option value="monthly">Monthly (30 days) - Driver pays 25%</option>
+                                </select>
+                                <div id="packageTimeInfo" class="form-text">
+                                    Daily: 4 AM - 7 PM (must end by 8 PM). Weekly/Monthly: 3 AM - 9 PM.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="start_date" class="form-label">Start Date & Time <span
+                                        class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="start_date" name="start_date"
+                                    min="{{ now.strftime('%Y-%m-%dT%H:%M') }}"
+                                    max="{{ (now + timedelta(days=30)).strftime('%Y-%m-%dT%H:%M') }}" required>
+                                <div id="dateRestrictionInfo" class="form-text">
+                                    Daily: Today or tomorrow only. Others: Up to 30 days.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="seats" class="form-label">Available Seats <span
+                                        class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-people"
+                                            aria-hidden="true"></i></span>
+                                    <input type="number" class="form-control" id="seats" name="seats" min="1" max="8"
+                                        value="3" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Vehicle Selection -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#vehicleSection" aria-expanded="false" aria-controls="vehicleSection">
+                        <i class="bi bi-car-front me-2 text-info" aria-hidden="true"></i>
+                        <span>Vehicle Selection</span>
+                        <span class="badge bg-secondary ms-2">Step 3</span>
+                    </button>
+                </h2>
+                <div id="vehicleSection" class="accordion-collapse collapse" data-bs-parent="#offerRideAccordion">
+                    <div class="accordion-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="btn-group w-100 mb-3" role="group" aria-label="Car selection method">
+                                    <input type="radio" class="btn-check" name="carType" id="userCar" value="userCar"
+                                        checked>
+                                    <label class="btn btn-outline-primary" for="userCar">
+                                        <i class="bi bi-car-front me-1" aria-hidden="true"></i>My Cars
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="carType" id="commonCar"
+                                        value="commonCar">
+                                    <label class="btn btn-outline-primary" for="commonCar">
+                                        <i class="bi bi-list-ul me-1" aria-hidden="true"></i>Common Cars
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- User's Cars -->
+                            <div id="userCarSelection" class="col-12">
+                                <label for="car" class="form-label">Select Your Car <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="car" name="car" required>
+                                    <option value="">Select your car</option>
+                                    {% for id, name, mileage in car_choices %}
+                                    <option value="{{ id }}" data-mileage="{{ mileage }}">{{ name }} ({{ mileage }}
+                                        km/l)</option>
+                                    {% endfor %}
+                                </select>
+                                {% if not car_choices %}
+                                <div class="alert alert-info mt-2 mb-0">
+                                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                                    No cars registered. <a href="{{ url_for('add_car') }}">Add a car</a> first or use
+                                    Common Cars.
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Common Cars -->
+                            <div id="commonCarSelection" class="col-12" style="display: none;">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="carMake" class="form-label">Car Make</label>
+                                        <select class="form-select" id="carMake" name="carMake">
+                                            <option value="">Select Make</option>
+                                            <option value="Maruti">Maruti</option>
+                                            <option value="Hyundai">Hyundai</option>
+                                            <option value="Honda">Honda</option>
+                                            <option value="Toyota">Toyota</option>
+                                            <option value="Tata">Tata</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="carModel" class="form-label">Car Model</label>
+                                        <select class="form-select" id="carModel" name="carModel" disabled>
+                                            <option value="">Select Model</option>
+                                        </select>
+                                        <div id="carMileageInfo" class="form-text" style="display: none;">
+                                            Mileage: <span id="selectedCarMileage">0</span> km/l
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Safety Verification -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#safetySection" aria-expanded="false" aria-controls="safetySection">
+                        <i class="bi bi-shield-check me-2 text-warning" aria-hidden="true"></i>
+                        <span>Safety Verification</span>
+                        <span class="badge bg-warning text-dark ms-2">Required</span>
+                    </button>
+                </h2>
+                <div id="safetySection" class="accordion-collapse collapse" data-bs-parent="#offerRideAccordion">
+                    <div class="accordion-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                            For passenger safety, please upload clear photos. All files are required.
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="license_photo" class="form-label">
+                                    Driver's License <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control" id="license_photo" name="license_photo"
+                                    accept="image/png,image/jpeg,image/jpg,image/gif" required>
+                                <div class="form-text">Clear photo of valid license</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="driver_photo" class="form-label">
+                                    Driver's Photo <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control" id="driver_photo" name="driver_photo"
+                                    accept="image/png,image/jpeg,image/jpg,image/gif" required>
+                                <div class="form-text">Recent photo of yourself</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="vehicle_photo" class="form-label">
+                                    Vehicle Photo <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control" id="vehicle_photo" name="vehicle_photo"
+                                    accept="image/png,image/jpeg,image/jpg,image/gif" required>
+                                <div class="form-text">Clear photo of your vehicle</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost Estimate Card (Always Visible) -->
+        <div class="card mt-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h3 class="h6 mb-0">
+                    <i class="bi bi-calculator me-2" aria-hidden="true"></i>
+                    Cost Estimate
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="costDetails" style="display: none;">
+                    <div class="row g-3">
+                        <div class="col-md-3 col-6">
+                            <div class="text-muted small">Vehicle</div>
+                            <div class="fw-semibold" id="carDetails">-</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-muted small">Daily Distance</div>
+                            <div class="fw-semibold"><span id="dailyDistance">-</span> km</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-muted small">Est. Fuel Cost</div>
+                            <div class="fw-semibold">₹<span id="fuelCost">-</span></div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-muted small">Cost Per Seat</div>
+                            <div class="fw-semibold fs-5 text-primary">₹<span id="costPerSeat">-</span></div>
+                        </div>
+                    </div>
+                    <div class="text-muted small mt-2">
+                        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                        This is an estimate. Final cost may vary based on actual expenses.
+                    </div>
+                </div>
+                <div id="noCostDetails">
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-arrow-up-circle me-1" aria-hidden="true"></i>
+                        Select a vehicle and enter distance to see cost estimate
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-circle me-2" aria-hidden="true"></i>
+                Offer Ride
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Form validation
+    (function () {
+        'use strict';
+        const form = document.getElementById('offerRideForm');
+        form.addEventListener('submit', function (event) {
+            // Expand all sections before validation
+            document.querySelectorAll('.accordion-collapse').forEach(section => {
+                section.classList.add('show');
+            });
+
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                // Find and focus first invalid field
+                const firstInvalid = form.querySelector(':invalid');
+                if (firstInvalid) {
+                    // Find parent accordion section and expand it
+                    const accordionItem = firstInvalid.closest('.accordion-collapse');
+                    if (accordionItem) {
+                        const bsCollapse = new bootstrap.Collapse(accordionItem, { show: true });
+                    }
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus();
+                }
+            }
+            form.classList.add('was-validated');
+        }, false);
+    })();
+
+    // Cost calculation
+    function updateCostEstimate() {
+        const carSelect = document.getElementById('car');
+        const distanceInput = document.getElementById('distance');
+        const seatsInput = document.getElementById('seats');
+        const packageSelect = document.getElementById('package_type');
+
+        const distance = parseFloat(distanceInput.value) || 0;
+        const seats = parseInt(seatsInput.value) || 1;
+        const packageType = packageSelect.value;
+
+        const packageMultipliers = { 'daily': 1, 'weekly': 7, 'biweekly': 14, 'monthly': 30 };
+        const packageMultiplier = packageMultipliers[packageType] || 1;
+
+        let carDetails = "";
+        let mileage = 0;
+
+        if (document.getElementById('userCar').checked) {
+            const carOption = carSelect.options[carSelect.selectedIndex];
+            if (carSelect.value) {
+                carDetails = carOption.text;
+                mileage = parseFloat(carOption.dataset.mileage) || 15;
+            }
+        } else {
+            const makeSelect = document.getElementById('carMake');
+            const modelSelect = document.getElementById('carModel');
+            if (makeSelect.value && modelSelect.value) {
+                const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+                carDetails = makeSelect.value + " " + modelSelect.value;
+                mileage = parseFloat(selectedOption.dataset.mileage) || 15;
+            }
+        }
+
+        if (carDetails && distance > 0) {
+            document.getElementById('costDetails').style.display = 'block';
+            document.getElementById('noCostDetails').style.display = 'none';
+            document.getElementById('carDetails').textContent = carDetails;
+            document.getElementById('dailyDistance').textContent = distance.toFixed(1);
+
+            const totalDistance = distance * packageMultiplier;
+            const fuelCost = (totalDistance / mileage) * 100;
+
+            let passengerShare = (packageType === 'daily') ? fuelCost * 0.50 : fuelCost * 0.75;
+            const costPerSeat = passengerShare / seats;
+
+            document.getElementById('fuelCost').textContent = fuelCost.toFixed(2);
+            document.getElementById('costPerSeat').textContent = costPerSeat.toFixed(2);
+        } else {
+            document.getElementById('costDetails').style.display = 'none';
+            document.getElementById('noCostDetails').style.display = 'block';
+        }
+    }
+
+    // Car selection toggle
+    document.getElementById('userCar').addEventListener('change', function () {
+        document.getElementById('userCarSelection').style.display = 'block';
+        document.getElementById('commonCarSelection').style.display = 'none';
+        document.getElementById('car').setAttribute('required', '');
+        document.getElementById('carMake').removeAttribute('required');
+        document.getElementById('carModel').removeAttribute('required');
+        updateCostEstimate();
+    });
+
+    document.getElementById('commonCar').addEventListener('change', function () {
+        document.getElementById('userCarSelection').style.display = 'none';
+        document.getElementById('commonCarSelection').style.display = 'block';
+        document.getElementById('car').removeAttribute('required');
+        document.getElementById('carMake').setAttribute('required', '');
+        document.getElementById('carModel').setAttribute('required', '');
+        updateCostEstimate();
+    });
+
+    // Car make/model data
+    const carModels = {
+        'Maruti': { 'Swift': 23.2, 'Baleno': 22.35, 'Dzire': 24.12, 'Ertiga': 20.51, 'Brezza': 20.15 },
+        'Hyundai': { 'i20': 20.28, 'Venue': 18.15, 'Creta': 17.0, 'Verna': 19.2 },
+        'Honda': { 'City': 18.4, 'Amaze': 18.6, 'WRV': 16.5, 'Jazz': 17.1 },
+        'Toyota': { 'Innova': 15.6, 'Fortuner': 14.4, 'Glanza': 22.35, 'Camry': 19.16 },
+        'Tata': { 'Nexon': 17.4, 'Harrier': 16.35, 'Safari': 16.14, 'Altroz': 19.05 }
+    };
+
+    document.getElementById('carMake').addEventListener('change', function () {
+        const makeSelect = this;
+        const modelSelect = document.getElementById('carModel');
+        modelSelect.innerHTML = '<option value="">Select Model</option>';
+        document.getElementById('carMileageInfo').style.display = 'none';
+
+        if (makeSelect.value && carModels[makeSelect.value]) {
+            modelSelect.disabled = false;
+            Object.entries(carModels[makeSelect.value]).forEach(([model, mileage]) => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = `${model} (${mileage} km/l)`;
+                option.dataset.mileage = mileage;
+                modelSelect.appendChild(option);
+            });
+        } else {
+            modelSelect.disabled = true;
+        }
+        updateCostEstimate();
+    });
+
+    document.getElementById('carModel').addEventListener('change', function () {
+        const mileageInfo = document.getElementById('carMileageInfo');
+        if (this.value) {
+            document.getElementById('selectedCarMileage').textContent = this.options[this.selectedIndex].dataset.mileage;
+            mileageInfo.style.display = 'block';
+        } else {
+            mileageInfo.style.display = 'none';
+        }
+        updateCostEstimate();
+    });
+
+    // Event listeners for cost updates
+    document.getElementById('package_type').addEventListener('change', function () {
+        updateCostEstimate();
+        updateDateTimeRestrictions();
+    });
+    document.getElementById('car').addEventListener('change', updateCostEstimate);
+    document.getElementById('distance').addEventListener('input', updateCostEstimate);
+    document.getElementById('seats').addEventListener('input', updateCostEstimate);
+
+    // Date/time restrictions
+    function updateDateTimeRestrictions() {
+        const packageType = document.getElementById('package_type').value;
+        const startDateInput = document.getElementById('start_date');
+        const dateInfo = document.getElementById('dateRestrictionInfo');
+        const timeInfo = document.getElementById('packageTimeInfo');
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        if (packageType === 'daily') {
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(23, 59, 59, 999);
+
+            startDateInput.min = formatDateTime(now);
+            startDateInput.max = formatDateTime(tomorrow);
+            dateInfo.textContent = 'Daily rides: Today or tomorrow only.';
+            timeInfo.innerHTML = '<strong>Time:</strong> 4:00 AM - 7:00 PM only';
+            timeInfo.classList.add('text-warning');
+        } else {
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 30);
+
+            startDateInput.min = formatDateTime(now);
+            startDateInput.max = formatDateTime(maxDate);
+            dateInfo.textContent = 'You can offer rides up to 30 days ahead.';
+            timeInfo.innerHTML = '<strong>Time:</strong> 3:00 AM - 9:00 PM';
+            timeInfo.classList.remove('text-warning');
+        }
+    }
+
+    function formatDateTime(date) {
+        return date.toISOString().slice(0, 16);
+    }
+
+    // Map toggle - now using Leaflet (FREE!)
+    document.getElementById('useMap').addEventListener('change', function () {
+        const mapContainer = document.getElementById('mapContainer');
+        if (this.checked) {
+            mapContainer.style.display = 'block';
+            // Initialize Leaflet map after a short delay
+            setTimeout(function () {
+                if (typeof L !== 'undefined' && !offerMap) {
+                    initOfferRideMap();
+                }
+            }, 100);
+        } else {
+            mapContainer.style.display = 'none';
+        }
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', updateDateTimeRestrictions);
+</script>
+<script src="{{ url_for('static', filename='js/offer_ride_map.js') }}"></script>
+{% endblock %}

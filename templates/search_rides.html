@@ -1,0 +1,895 @@
+<!--
+Search Rides Template for Ride-Share Application
+
+This template provides the ride search interface with two main sections:
+
+1. Search Form:
+   - Origin city input
+   - Destination city input
+   - Date selector (with minimum date validation)
+   - Search button
+   
+2. Search Results:
+   - Responsive card grid layout
+   - Each ride card shows:
+     * Route (origin → destination)
+     * Date and time
+     * Price per seat
+     * Driver information
+     * Available seats
+     * Booking button (conditional on user status)
+
+Features:
+- Clean and intuitive search interface
+- Real-time validation
+- Responsive design
+- Conditional rendering based on:
+  * User authentication status
+  * Seat availability
+  * Whether user is the driver
+
+Dependencies:
+- Bootstrap 5 for layout and styling
+- Bootstrap Icons for visual elements
+- Flask-Login for authentication checks
+-->
+
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Search Header -->
+<div class="search-header mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="search-title">
+                <i class="bi bi-search text-primary me-2"></i>
+                Find Your Perfect Ride
+            </h1>
+            <p class="text-muted mb-0">Search for available carpool rides and save money on your commute</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="search-stats">
+                <span class="badge bg-primary fs-6">{{ rides|length }} rides available</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-funnel me-2"></i>
+            Search Filters
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('search_rides') }}" id="searchForm">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="origin" class="form-label">
+                        <i class="bi bi-geo-alt me-1"></i>From
+                    </label>
+                    <input type="text" class="form-control" id="origin" name="origin"
+                        value="{{ request.args.get('origin', '') }}" placeholder="Enter origin location"
+                        aria-describedby="originHelp">
+                    <div class="form-text" id="originHelp">Start typing to see suggestions</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="destination" class="form-label">
+                        <i class="bi bi-geo-alt-fill me-1"></i>To
+                    </label>
+                    <input type="text" class="form-control" id="destination" name="destination"
+                        value="{{ request.args.get('destination', '') }}" placeholder="Enter destination location"
+                        aria-describedby="destinationHelp">
+                    <div class="form-text" id="destinationHelp">Start typing to see suggestions</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="date" class="form-label">
+                        <i class="bi bi-calendar-event me-1"></i>Date
+                    </label>
+                    <input type="date" class="form-control" id="date" name="date"
+                        value="{{ request.args.get('date', '') }}" min="{{ now.strftime('%Y-%m-%d') }}"
+                        aria-describedby="dateHelp">
+                    <div class="form-text" id="dateHelp">Select your travel date</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="package_type" class="form-label">
+                        <i class="bi bi-calendar-week me-1"></i>Package Type
+                    </label>
+                    <select class="form-select" id="package_type" name="package_type" aria-describedby="packageHelp">
+                        <option value="">All Packages</option>
+                        <option value="daily" {{ 'selected' if request.args.get('package_type')=='daily' }}>Daily (50%
+                            shared)</option>
+                        <option value="weekly" {{ 'selected' if request.args.get('package_type')=='weekly' }}>Weekly
+                            (75% shared)</option>
+                        <option value="biweekly" {{ 'selected' if request.args.get('package_type')=='biweekly' }}>
+                            Bi-weekly (75% shared)</option>
+                        <option value="monthly" {{ 'selected' if request.args.get('package_type')=='monthly' }}>Monthly
+                            (75% shared)</option>
+                    </select>
+                    <div class="form-text" id="packageHelp">Choose package duration</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="max_price" class="form-label">
+                        <i class="bi bi-currency-rupee me-1"></i>Max Price
+                    </label>
+                    <input type="number" class="form-control" id="max_price" name="max_price"
+                        value="{{ request.args.get('max_price', '') }}" placeholder="Enter max price" min="0"
+                        step="0.01" aria-describedby="priceHelp">
+                    <div class="form-text" id="priceHelp">Maximum price per seat</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="seats_needed" class="form-label">
+                        <i class="bi bi-people me-1"></i>Seats Needed
+                    </label>
+                    <select class="form-select" id="seats_needed" name="seats_needed" aria-describedby="seatsHelp">
+                        <option value="">Any</option>
+                        <option value="1" {{ 'selected' if request.args.get('seats_needed')=='1' }}>1 Seat</option>
+                        <option value="2" {{ 'selected' if request.args.get('seats_needed')=='2' }}>2 Seats</option>
+                        <option value="3" {{ 'selected' if request.args.get('seats_needed')=='3' }}>3 Seats</option>
+                        <option value="4" {{ 'selected' if request.args.get('seats_needed')=='4' }}>4+ Seats</option>
+                    </select>
+                    <div class="form-text" id="seatsHelp">Number of seats you need</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="sort_by" class="form-label">
+                        <i class="bi bi-sort-down me-1"></i>Sort By
+                    </label>
+                    <select class="form-select" id="sort_by" name="sort_by" aria-describedby="sortHelp">
+                        <option value="date" {{ 'selected' if request.args.get('sort_by')=='date' }}>Date</option>
+                        <option value="price_low" {{ 'selected' if request.args.get('sort_by')=='price_low' }}>Price:
+                            Low to High</option>
+                        <option value="price_high" {{ 'selected' if request.args.get('sort_by')=='price_high' }}>Price:
+                            High to Low</option>
+                        <option value="distance" {{ 'selected' if request.args.get('sort_by')=='distance' }}>Distance
+                        </option>
+                    </select>
+                    <div class="form-text" id="sortHelp">Sort results by</div>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-2"></i>Search Rides
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Clear Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="toggleAdvancedFilters()">
+                            <i class="bi bi-gear me-2"></i>Advanced
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Advanced Filters (Collapsible) -->
+<div class="card mb-4" id="advancedFilters" style="display: none;">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="bi bi-sliders me-2"></i>
+            Advanced Filters
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="fuel_type" class="form-label">Fuel Type</label>
+                <select class="form-select" id="fuel_type" name="fuel_type">
+                    <option value="">All Types</option>
+                    <option value="petrol">Petrol</option>
+                    <option value="diesel">Diesel</option>
+                    <option value="electric">Electric</option>
+                    <option value="hybrid">Hybrid</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="ac_preference" class="form-label">AC Preference</label>
+                <select class="form-select" id="ac_preference" name="ac_preference">
+                    <option value="">Any</option>
+                    <option value="ac">AC Only</option>
+                    <option value="non_ac">Non-AC</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="driver_rating" class="form-label">Minimum Driver Rating</label>
+                <select class="form-select" id="driver_rating" name="driver_rating">
+                    <option value="">Any Rating</option>
+                    <option value="4">4+ Stars</option>
+                    <option value="3">3+ Stars</option>
+                    <option value="2">2+ Stars</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+<div class="search-results">
+    {% if rides %}
+    <!-- Results Summary -->
+    <div class="results-summary mb-3">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0">
+                    <strong>{{ rides|length }}</strong> rides found
+                    {% if request.args.get('origin') or request.args.get('destination') %}
+                    for your search criteria
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="view-options">
+                    <button class="btn btn-sm btn-outline-primary active" onclick="setViewMode('grid')">
+                        <i class="bi bi-grid me-1"></i>Grid
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="setViewMode('list')">
+                        <i class="bi bi-list me-1"></i>List
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rides Grid -->
+    <div class="row" id="ridesGrid">
+        {% for ride in rides %}
+        <!-- Insert Ad Card after every 3rd ride -->
+        {% if loop.index == 3 %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="ad-inline-card">
+                <i class="bi bi-fuel-pump-fill ad-inline-icon"></i>
+                <h5 class="ad-inline-title">PetroMax Partner</h5>
+                <p class="ad-inline-offer"><i class="bi bi-gift me-1"></i>5% Cashback on Fuel</p>
+                <p class="text-muted small mb-3">Exclusive offer for our carpoolers at 500+ stations</p>
+                <button class="ad-inline-btn" onclick="window.open('#', '_blank')">
+                    <i class="bi bi-geo-alt"></i>Find Station
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        {% if loop.index == 6 %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="ad-inline-card">
+                <i class="bi bi-building ad-inline-icon"></i>
+                <h5 class="ad-inline-title">StayEasy Hotels</h5>
+                <p class="ad-inline-offer"><i class="bi bi-percent me-1"></i>15% Off Bookings</p>
+                <p class="text-muted small mb-3">Rest easy on long trips at our partner hotels</p>
+                <button class="ad-inline-btn" onclick="window.open('#', '_blank')">
+                    <i class="bi bi-calendar-check"></i>Book Now
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="ride-card h-100">
+                <div class="ride-card-header">
+                    <div class="ride-route">
+                        <h6 class="mb-1">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            {{ ride.origin }} → {{ ride.destination }}
+                        </h6>
+                        <small class="text-muted">{{ ride.distance }} km</small>
+                    </div>
+                    <div class="ride-badges">
+                        <span class="badge bg-primary">{{ ride.package_type|title }}</span>
+                        {% if ride.car.ac %}
+                        <span class="badge bg-success">AC</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="ride-card-body">
+                    <div class="ride-info">
+                        <div class="info-row">
+                            <i class="bi bi-calendar-event"></i>
+                            <span>{{ ride.start_date.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="bi bi-person-circle"></i>
+                            <span>Driver: {{ ride.driver.username }}</span>
+                            {% if ride.driver.green_flags > 0 or ride.driver.red_flags > 0 %}
+                            <span class="flags ms-2">
+                                <span class="badge bg-success"><i class="bi bi-flag-fill"></i> {{
+                                    ride.driver.green_flags }}</span>
+                                {% if ride.driver.red_flags > 0 %}
+                                <span class="badge bg-danger ms-1"><i class="bi bi-flag-fill"></i> {{
+                                    ride.driver.red_flags }}</span>
+                                {% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="info-row">
+                            <i class="bi bi-car-front"></i>
+                            <span>{{ ride.car.make }} {{ ride.car.model }}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="bi bi-people"></i>
+                            <span>{{ ride.available_seats }}/{{ ride.seats }} seats available</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="bi bi-fuel-pump"></i>
+                            <span>{{ ride.car.fuel_type|title }} ({{ ride.car.mileage }} km/l)</span>
+                        </div>
+                    </div>
+
+                    <div class="ride-price">
+                        <div class="price-tag">
+                            <span class="price-amount">₹{{ "%.2f"|format(ride.price_per_seat) }}</span>
+                            <span class="price-unit">per seat</span>
+                        </div>
+                        <div class="price-details">
+                            <small class="text-muted">Total: ₹{{ "%.2f"|format(ride.price_per_seat * ride.seats)
+                                }}</small>
+                        </div>
+                    </div>
+
+                    <div class="ride-actions">
+                        <a href="{{ url_for('book_ride', ride_id=ride.id) }}" class="btn btn-primary">
+                            <i class="bi bi-calendar-check me-1"></i>Book Now
+                        </a>
+                        <a href="{{ url_for('user_profile', user_id=ride.driver.id) }}" class="btn btn-outline-info">
+                            <i class="bi bi-person me-1"></i>View Driver
+                        </a>
+                        <button class="btn btn-outline-secondary" data-ride-id="{{ ride.id }}"
+                            data-origin="{{ ride.origin }}" data-destination="{{ ride.destination }}"
+                            data-distance="{{ ride.distance }}" data-start-date="{{ ride.start_date.isoformat() }}"
+                            data-end-date="{{ ride.end_date.isoformat() }}" data-package-type="{{ ride.package_type }}"
+                            data-price="{{ ride.price_per_seat }}" data-seats="{{ ride.available_seats }}"
+                            data-driver-name="{{ ride.driver.username }}" data-driver-rating="{{ ride.driver.rating }}"
+                            data-driver-green="{{ ride.driver.green_flags or 0 }}"
+                            data-driver-red="{{ ride.driver.red_flags or 0 }}" data-car-make="{{ ride.car.make }}"
+                            data-car-model="{{ ride.car.model }}" data-car-year="{{ ride.car.year }}"
+                            data-car-color="{{ ride.car.color }}" data-car-fuel="{{ ride.car.fuel_type }}"
+                            data-car-mileage="{{ ride.car.mileage }}" data-car-ac="{{ ride.car.ac }}"
+                            data-license-photo="{{ ride.license_photo or '' }}"
+                            data-driver-photo="{{ ride.driver_photo or '' }}"
+                            data-vehicle-photo="{{ ride.vehicle_photo or '' }}" onclick="showRideDetails(this)">
+                            <i class="bi bi-info-circle me-1"></i>Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Load More Button -->
+    {% if rides|length >= 12 %}
+    <div class="text-center mt-4">
+        <button class="btn btn-outline-primary" onclick="loadMoreRides()">
+            <i class="bi bi-arrow-down me-2"></i>Load More Rides
+        </button>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- No Results -->
+    <div class="no-results text-center py-5">
+        <i class="bi bi-search display-1 text-muted"></i>
+        <h3 class="mt-3">No rides found</h3>
+        <p class="text-muted mb-4">
+            {% if request.args.get('origin') or request.args.get('destination') %}
+            No rides match your search criteria. Try adjusting your filters.
+            {% else %}
+            No rides are currently available. Check back later or offer a ride yourself!
+            {% endif %}
+        </p>
+        <div class="d-flex gap-2 justify-content-center">
+            <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                <i class="bi bi-arrow-clockwise me-2"></i>Clear Filters
+            </button>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('offer_ride') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Offer a Ride
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ride Details Modal -->
+<div class="modal fade" id="rideDetailsModal" tabindex="-1" aria-labelledby="rideDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rideDetailsModalLabel">
+                    <i class="bi bi-info-circle me-2"></i>Ride Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="rideDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" class="btn btn-primary" id="bookRideBtn">
+                    <i class="bi bi-calendar-check me-2"></i>Book This Ride
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Search functionality
+    function clearFilters() {
+        document.getElementById('origin').value = '';
+        document.getElementById('destination').value = '';
+        document.getElementById('date').value = '';
+        document.getElementById('package_type').value = '';
+        document.getElementById('max_price').value = '';
+        document.getElementById('seats_needed').value = '';
+        document.getElementById('sort_by').value = 'date';
+        document.getElementById('searchForm').submit();
+    }
+
+    function toggleAdvancedFilters() {
+        const advancedFilters = document.getElementById('advancedFilters');
+        if (advancedFilters.style.display === 'none') {
+            advancedFilters.style.display = 'block';
+        } else {
+            advancedFilters.style.display = 'none';
+        }
+    }
+
+    function setViewMode(mode) {
+        const gridBtn = document.querySelector('button[onclick="setViewMode(\'grid\')"]');
+        const listBtn = document.querySelector('button[onclick="setViewMode(\'list\')"]');
+        const ridesGrid = document.getElementById('ridesGrid');
+
+        if (mode === 'grid') {
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+            ridesGrid.className = 'row';
+        } else {
+            listBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+            ridesGrid.className = 'row rides-list-view';
+        }
+    }
+
+    function showRideDetails(button) {
+        // Extract data from button attributes
+        const rideId = button.dataset.rideId;
+        const origin = button.dataset.origin;
+        const destination = button.dataset.destination;
+        const distance = parseFloat(button.dataset.distance);
+        const startDate = new Date(button.dataset.startDate);
+        const endDate = new Date(button.dataset.endDate);
+        const packageType = button.dataset.packageType;
+        const price = parseFloat(button.dataset.price);
+        const seats = parseInt(button.dataset.seats);
+        const driverName = button.dataset.driverName;
+        const driverRating = parseFloat(button.dataset.driverRating);
+        const driverGreen = parseInt(button.dataset.driverGreen);
+        const driverRed = parseInt(button.dataset.driverRed);
+        const carMake = button.dataset.carMake;
+        const carModel = button.dataset.carModel;
+        const carYear = button.dataset.carYear;
+        const carColor = button.dataset.carColor;
+        const carFuel = button.dataset.carFuel;
+        const carMileage = parseFloat(button.dataset.carMileage);
+        const carAc = button.dataset.carAc === 'True';
+        const licensePhoto = button.dataset.licensePhoto;
+        const driverPhoto = button.dataset.driverPhoto;
+        const vehiclePhoto = button.dataset.vehiclePhoto;
+
+        // Calculate estimated time
+        const estimatedMinutes = Math.round((distance / 40) * 60); // 40 km/h average speed
+        const estimatedHours = Math.floor(estimatedMinutes / 60);
+        const remainingMinutes = estimatedMinutes % 60;
+        const timeString = estimatedHours > 0 ? `${estimatedHours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
+
+        // Package duration
+        const packageDurations = {
+            'daily': '1 day',
+            'weekly': '7 days',
+            'biweekly': '14 days',
+            'monthly': '30 days'
+        };
+
+        // Format the detailed view
+        document.getElementById('rideDetailsContent').innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary mb-3">
+                    <i class="bi bi-geo-alt me-2"></i>Route Information
+                </h6>
+                <div class="mb-3">
+                    <p class="mb-2"><strong>From:</strong> ${origin}</p>
+                    <p class="mb-2"><strong>To:</strong> ${destination}</p>
+                    <p class="mb-2"><strong>Distance:</strong> ${distance} km</p>
+                    <p class="mb-2"><strong>Est. Time:</strong> ${timeString}</p>
+                </div>
+                
+                <h6 class="text-primary mb-3 mt-4">
+                    <i class="bi bi-calendar-week me-2"></i>Package Details
+                </h6>
+                <div class="mb-3">
+                    <p class="mb-2">
+                        <strong>Package Type:</strong> 
+                        <span class="badge bg-primary">${packageType.charAt(0).toUpperCase() + packageType.slice(1)}</span>
+                        ${packageType === 'daily' ? '<span class="badge bg-success ms-1">50% Discount</span>' : ''}
+                    </p>
+                    <p class="mb-2"><strong>Duration:</strong> ${packageDurations[packageType]}</p>
+                    <p class="mb-2"><strong>Start Date:</strong> ${startDate.toLocaleString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        })}</p>
+                    <p class="mb-2"><strong>End Date:</strong> ${endDate.toLocaleString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        })}</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h6 class="text-primary mb-3">
+                    <i class="bi bi-person-circle me-2"></i>Driver Information
+                </h6>
+                <div class="mb-3">
+                    <p class="mb-2"><strong>Name:</strong> ${driverName}</p>
+                    <p class="mb-2">
+                        <strong>Trust:</strong>
+                        <span class="badge bg-success ms-1">
+                            <i class="bi bi-flag-fill"></i> ${driverGreen} Green
+                        </span>
+                        ${driverRed > 0 ? `
+                            <span class="badge bg-danger ms-1">
+                                <i class="bi bi-flag-fill"></i> ${driverRed} Red
+                            </span>
+                        ` : ''}
+                    </p>
+                </div>
+                
+                <h6 class="text-primary mb-3 mt-4">
+                    <i class="bi bi-car-front me-2"></i>Vehicle Details
+                </h6>
+                <div class="mb-3">
+                    <p class="mb-2"><strong>Car:</strong> ${carMake} ${carModel}</p>
+                    <p class="mb-2"><strong>Year:</strong> ${carYear}</p>
+                    <p class="mb-2"><strong>Color:</strong> ${carColor}</p>
+                    <p class="mb-2"><strong>Fuel Type:</strong> ${carFuel.charAt(0).toUpperCase() + carFuel.slice(1)}</p>
+                    <p class="mb-2"><strong>Mileage:</strong> ${carMileage} km/l</p>
+                    <p class="mb-2">
+                        <strong>Features:</strong> 
+                        ${carAc ? '<span class="badge bg-success">AC</span>' : '<span class="badge bg-secondary">Non-AC</span>'}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        ${licensePhoto || driverPhoto || vehiclePhoto ? `
+        <div class="row mt-4">
+            <div class="col-12">
+                <h6 class="text-primary mb-3">
+                    <i class="bi bi-shield-check me-2"></i>Safety Verification
+                </h6>
+                <div class="row">
+                    ${licensePhoto ? `
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label"><strong>Driver's License</strong></label>
+                        <a href="/static/${licensePhoto}" target="_blank" data-bs-toggle="tooltip" title="Click to view full size">
+                            <img src="/static/${licensePhoto}" alt="Driver License" class="img-thumbnail" style="width: 100%; height: 200px; object-fit: cover;">
+                        </a>
+                    </div>
+                    ` : ''}
+                    ${driverPhoto ? `
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label"><strong>Driver's Photo</strong></label>
+                        <a href="/static/${driverPhoto}" target="_blank" data-bs-toggle="tooltip" title="Click to view full size">
+                            <img src="/static/${driverPhoto}" alt="Driver Photo" class="img-thumbnail" style="width: 100%; height: 200px; object-fit: cover;">
+                        </a>
+                    </div>
+                    ` : ''}
+                    ${vehiclePhoto ? `
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label"><strong>Vehicle Photo</strong></label>
+                        <a href="/static/${vehiclePhoto}" target="_blank" data-bs-toggle="tooltip" title="Click to view full size">
+                            <img src="/static/${vehiclePhoto}" alt="Vehicle Photo" class="img-thumbnail" style="width: 100%; height: 200px; object-fit: cover;">
+                        </a>
+                    </div>
+                    ` : ''}
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>Click on any image to view full size
+                </small>
+            </div>
+        </div>
+        ` : ''}
+        
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h6 class="mb-3">
+                        <i class="bi bi-currency-rupee me-2"></i>Pricing Details
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Price per Seat:</strong> ₹${price.toFixed(2)}</p>
+                            <p class="mb-2"><strong>Available Seats:</strong> ${seats} seats</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Total Package Price:</strong> ₹${(price * seats).toFixed(2)}</p>
+                            ${packageType === 'daily' ?
+                '<p class="mb-0 text-success"><small><i class="bi bi-info-circle me-1"></i>Daily rides: Driver pays 50%, passengers share 50%!</small></p>'
+                : '<p class="mb-0 text-success"><small><i class="bi bi-info-circle me-1"></i>Weekly/Monthly rides: Driver pays 25%, passengers share 75%!</small></p>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        const modal = new bootstrap.Modal(document.getElementById('rideDetailsModal'));
+        modal.show();
+
+        // Update book button href
+        document.getElementById('bookRideBtn').href = '/book-ride/' + rideId;
+    }
+
+    function loadMoreRides() {
+        // This would typically load more rides via AJAX
+        alert('Load more functionality would be implemented here');
+    }
+
+    // Auto-complete for location inputs
+    document.addEventListener('DOMContentLoaded', function () {
+        const originInput = document.getElementById('origin');
+        const destinationInput = document.getElementById('destination');
+
+        // Common locations for demo purposes
+        const commonLocations = [
+            'Mumbai Central', 'Bandra West', 'Andheri East', 'Borivali West',
+            'Thane West', 'Navi Mumbai', 'Pune', 'Nashik', 'Aurangabad',
+            'Nagpur', 'Kolhapur', 'Solapur', 'Amravati', 'Akola'
+        ];
+
+        function setupAutocomplete(input) {
+            input.addEventListener('input', function () {
+                const value = this.value.toLowerCase();
+                const suggestions = commonLocations.filter(location =>
+                    location.toLowerCase().includes(value)
+                );
+
+                // Remove existing suggestions
+                const existingList = document.getElementById('suggestions-' + input.id);
+                if (existingList) {
+                    existingList.remove();
+                }
+
+                if (suggestions.length > 0 && value.length > 0) {
+                    const suggestionList = document.createElement('ul');
+                    suggestionList.id = 'suggestions-' + input.id;
+                    suggestionList.className = 'list-group position-absolute w-100';
+                    suggestionList.style.zIndex = '1000';
+
+                    suggestions.forEach(suggestion => {
+                        const item = document.createElement('li');
+                        item.className = 'list-group-item list-group-item-action';
+                        item.textContent = suggestion;
+                        item.addEventListener('click', function () {
+                            input.value = suggestion;
+                            suggestionList.remove();
+                        });
+                        suggestionList.appendChild(item);
+                    });
+
+                    input.parentNode.style.position = 'relative';
+                    input.parentNode.appendChild(suggestionList);
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!input.contains(e.target)) {
+                    const existingList = document.getElementById('suggestions-' + input.id);
+                    if (existingList) {
+                        existingList.remove();
+                    }
+                }
+            });
+        }
+
+        setupAutocomplete(originInput);
+        setupAutocomplete(destinationInput);
+    });
+
+    // Form validation
+    document.getElementById('searchForm').addEventListener('submit', function (e) {
+        const origin = document.getElementById('origin').value.trim();
+        const destination = document.getElementById('destination').value.trim();
+
+        if (origin && destination && origin.toLowerCase() === destination.toLowerCase()) {
+            e.preventDefault();
+            alert('Origin and destination cannot be the same');
+            return false;
+        }
+    });
+</script>
+
+<style>
+    /* Search-specific styles */
+    .search-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: var(--text-light);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .search-title {
+        color: var(--text-light) !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .ride-card {
+        background: var(--bg-white);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .ride-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .ride-card-header {
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary-light) 100%);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .ride-route h6 {
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .ride-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .ride-card-body {
+        padding: 1.5rem;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        gap: 0.75rem;
+    }
+
+    .info-row i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    .rating {
+        margin-left: auto;
+        font-size: 0.9rem;
+    }
+
+    .ride-price {
+        background: var(--bg-light);
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        text-align: center;
+    }
+
+    .price-amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .price-unit {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    .ride-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .rides-list-view .col-lg-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .rides-list-view .ride-card {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .rides-list-view .ride-card-header {
+        flex: 0 0 300px;
+        border-right: 1px solid var(--border-color);
+        border-bottom: none;
+    }
+
+    .rides-list-view .ride-card-body {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .rides-list-view .ride-info {
+        flex: 1;
+    }
+
+    .rides-list-view .ride-price {
+        margin: 0 1rem;
+    }
+
+    .rides-list-view .ride-actions {
+        flex: 0 0 auto;
+    }
+
+    @media (max-width: 768px) {
+        .search-header {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .search-title {
+            font-size: 1.75rem;
+        }
+
+        .ride-actions {
+            flex-direction: column;
+        }
+
+        .ride-actions .btn {
+            width: 100%;
+        }
+
+        .rides-list-view .ride-card {
+            flex-direction: column;
+        }
+
+        .rides-list-view .ride-card-header {
+            flex: none;
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .rides-list-view .ride-card-body {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .rides-list-view .ride-price {
+            margin: 1rem 0;
+        }
+    }
+</style>
+{% endblock %}
+{% block title %}Search Rides - Ride-Share{% endblock %}

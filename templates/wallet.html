@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">My Wallet</h2>
+    
+    <!-- Driver's Rides Section -->
+    {% if driver_rides %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Rides You're Driving</h4>
+        </div>
+        <div class="card-body">
+            {% for ride in driver_rides %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {{ ride.origin }} to {{ ride.destination }}
+                        <span class="badge bg-primary">{{ ride.package_type }}</span>
+                    </h5>
+                    <p class="text-muted">
+                        Starting: {{ ride.start_date.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                    
+                    <!-- Expense Summary -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Expense Summary</h6>
+                            <ul class="list-unstyled">
+                                <li>
+                                    <i class="bi bi-fuel-pump"></i>
+                                    Fuel Cost: ₹{{ "%.2f"|format(ride.get_estimated_total_cost()) }}
+                                </li>
+                                {% for expense in ride.expenses %}
+                                <li>
+                                    {% if expense.toll_cost > 0 %}
+                                    <i class="bi bi-sign-stop"></i>
+                                    Toll Cost: ₹{{ "%.2f"|format(expense.toll_cost) }}
+                                    {% endif %}
+                                    {% if expense.other_costs > 0 %}
+                                    <br><i class="bi bi-cash"></i>
+                                    Other Costs: ₹{{ "%.2f"|format(expense.other_costs) }}
+                                    ({{ expense.description }})
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Cost Distribution</h6>
+                            {% set fare_dist = ride.calculate_fare_distribution() %}
+                            <ul class="list-unstyled">
+                                <li>Your Share: ₹{{ "%.2f"|format(fare_dist.driver_share) }}</li>
+                                {% for booking in fare_dist.bookings %}
+                                <li>{{ booking.passenger_name }}: ₹{{ "%.2f"|format(booking.share) }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Add Expense Button -->
+                    <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addExpenseModal{{ ride.id }}">
+                        Add Expense
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Expense Modal -->
+            <div class="modal fade" id="addExpenseModal{{ ride.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Expense for {{ ride.origin }} to {{ ride.destination }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form action="{{ url_for('add_expense', ride_id=ride.id) }}" method="post">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="toll_cost" class="form-label">Toll Cost</label>
+                                    <input type="number" step="0.01" class="form-control" id="toll_cost" name="toll_cost" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="other_costs" class="form-label">Other Costs</label>
+                                    <input type="number" step="0.01" class="form-control" id="other_costs" name="other_costs" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary">Add Expense</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Passenger's Bookings Section -->
+    {% if passenger_bookings %}
+    <div class="card">
+        <div class="card-header">
+            <h4>Your Booked Rides</h4>
+        </div>
+        <div class="card-body">
+            {% for booking in passenger_bookings %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {{ booking.ride.origin }} to {{ booking.ride.destination }}
+                        <span class="badge bg-primary">{{ booking.ride.package_type }}</span>
+                    </h5>
+                    <p class="text-muted">
+                        Starting: {{ booking.ride.start_date.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                    
+                    <!-- Expense Summary -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Expense Summary</h6>
+                            <ul class="list-unstyled">
+                                <li>
+                                    <i class="bi bi-fuel-pump"></i>
+                                    Fuel Cost: ₹{{ "%.2f"|format(booking.ride.get_estimated_total_cost()) }}
+                                </li>
+                                {% for expense in booking.ride.expenses %}
+                                <li>
+                                    {% if expense.toll_cost > 0 %}
+                                    <i class="bi bi-sign-stop"></i>
+                                    Toll Cost: ₹{{ "%.2f"|format(expense.toll_cost) }}
+                                    {% endif %}
+                                    {% if expense.other_costs > 0 %}
+                                    <br><i class="bi bi-cash"></i>
+                                    Other Costs: ₹{{ "%.2f"|format(expense.other_costs) }}
+                                    ({{ expense.description }})
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Your Share</h6>
+                            {% set fare_dist = booking.ride.calculate_fare_distribution() %}
+                            {% set user_booking = fare_dist.bookings|selectattr("passenger_id", "equalto", current_user.id)|first %}
+                            <p>₹{{ "%.2f"|format(user_booking.share) }} ({{ booking.seats }} seats)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not driver_rides and not passenger_bookings %}
+    <div class="alert alert-info">
+        You don't have any rides or bookings yet.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
