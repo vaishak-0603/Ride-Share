@@ -2329,26 +2329,41 @@ def admin_dashboard():
     # Sort by time
     recent_activity.sort(key=lambda x: x['time_ago'])
     
-    # User growth data (last 30 days)
+    # User growth data (last 30 days) - Optimized to use single query
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    # Get counts grouped by date
+    growth_results = db.session.query(
+        func.date(User.created_at).label('reg_date'),
+        func.count(User.id)
+    ).filter(User.created_at >= thirty_days_ago)\
+     .group_by('reg_date')\
+     .order_by('reg_date').all()
+    
+    # Convert results to dictionary for easy lookup
+    growth_dict = {str(res[0]): res[1] for res in growth_results}
+    
     user_growth_labels = []
     user_growth_data = []
     for i in range(29, -1, -1):
         day = datetime.now() - timedelta(days=i)
-        day_start = datetime(day.year, day.month, day.day)
-        day_end = day_start + timedelta(days=1)
-        count = User.query.filter(
-            User.created_at >= day_start,
-            User.created_at < day_end
-        ).count()
+        date_str = day.strftime('%Y-%m-%d')
         user_growth_labels.append(day.strftime('%b %d'))
-        user_growth_data.append(count)
+        user_growth_data.append(growth_dict.get(date_str, 0))
     
-    # Package distribution
+    # Package distribution - Optimized to use single query
+    distribution_results = db.session.query(
+        Ride.package_type,
+        func.count(Ride.id)
+    ).group_by(Ride.package_type).all()
+    
+    dist_dict = {res[0]: res[1] for res in distribution_results}
+    
     package_distribution = [
-        Ride.query.filter_by(package_type='daily').count(),
-        Ride.query.filter_by(package_type='weekly').count(),
-        Ride.query.filter_by(package_type='biweekly').count(),
-        Ride.query.filter_by(package_type='monthly').count()
+        dist_dict.get('daily', 0),
+        dist_dict.get('weekly', 0),
+        dist_dict.get('biweekly', 0),
+        dist_dict.get('monthly', 0)
     ]
     
     pending_sos_count = active_sos
