@@ -27,7 +27,7 @@ from wtforms import StringField, PasswordField, SubmitField, TextAreaField, Sele
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, NumberRange
 import bcrypt
 import os
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, text, func
 from datetime import datetime, timedelta, timezone
 import bcrypt
 import os
