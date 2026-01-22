@@ -106,6 +106,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% if user_growth_labels and user_growth_data %}
                         {% for i in range(user_growth_labels|length - 1, -1, -1) %}
                         <tr>
                             <td>{{ user_growth_labels[i] }}</td>
@@ -117,6 +118,11 @@
                             </td>
                         </tr>
                         {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">No data available</td>
+                        </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -166,8 +172,6 @@
 
 {% block extra_js %}
 <script>
-
-
     // Package Distribution Chart
     const packageCtx = document.getElementById('packageChart').getContext('2d');
     new Chart(packageCtx, {
@@ -175,7 +179,7 @@
         data: {
             labels: ['Daily', 'Weekly', 'Bi-Weekly', 'Monthly'],
             datasets: [{
-                data: {{ package_distribution | tojson }
+                data: {{ package_distribution | tojson }},
     },
         backgroundColor: ['#e74c3c', '#3498db', '#f39c12', '#27ae60']
             }]
