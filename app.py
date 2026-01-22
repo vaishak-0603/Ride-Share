@@ -2154,6 +2154,18 @@ def trigger_sos():
     current_user.sos_timestamp = utc_now()
     current_user.sos_message = data.get('message', 'Emergency!')
     
+    # Create an emergency report for the admin panel
+    report = Report(
+        user_id=current_user.id,
+        report_type='emergency',
+        subject=f"SOS Alert: {current_user.username}",
+        description=data.get('message', 'Emergency SOS triggered via app'),
+        location=data.get('location', 'Unknown'),
+        status='pending',
+        emergency_type='safety'
+    )
+    db.session.add(report)
+    
     db.session.commit()
     
     app.logger.warning(f'🚨 SOS ALERT: User {current_user.username} at {current_user.sos_location}')
@@ -2226,6 +2238,7 @@ def admin_login():
             flash('Invalid email or password.', 'error')
     
     return render_template('admin/login.html')
+
 @app.route('/admin/logout')
 @login_required
 @admin_required
@@ -2234,7 +2247,7 @@ def admin_logout():
     log_admin_action('Admin logout')
     logout_user()
     flash('You have been logged out.', 'info')
-    return redirect(url_for('admin_login'))
+    return redirect(url_for('login'))
 
 def _time_ago(dt):
     """Helper to calculate time ago."""
