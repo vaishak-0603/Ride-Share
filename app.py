@@ -999,6 +999,10 @@ def offer_ride():
                 
             if distance <= 0:
                 raise ValueError("Distance must be greater than 0")
+            
+            # Enforce maximum 100km distance limit
+            if distance > 100:
+                raise ValueError("Distance cannot exceed 100km. Please split longer trips into multiple rides.")
                 
             if package_type not in PACKAGE_DURATIONS:
                 raise ValueError("Invalid package type")

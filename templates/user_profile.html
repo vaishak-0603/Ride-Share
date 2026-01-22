@@ -230,6 +230,13 @@
 
                 <!-- Cars Tab -->
                 <div class="tab-pane fade" id="cars" role="tabpanel">
+                    {% if current_user.is_authenticated and current_user.id == user.id %}
+                    <div class="mb-3">
+                        <a href="{{ url_for('add_car') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add New Car
+                        </a>
+                    </div>
+                    {% endif %}
                     {% if user.cars %}
                     <div class="cars-section">
                         <div class="row">

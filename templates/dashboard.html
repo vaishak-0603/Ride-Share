@@ -263,8 +263,22 @@ Modern, accessible dashboard with collapsible sections and compact cards.
                     <div class="pending-request-card mb-3">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
-                                <strong>{{ booking.passenger.username }}</strong> wants to join
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <strong>{{ booking.passenger.username }}</strong>
+                                    {% if booking.passenger.green_flags > 0 or booking.passenger.red_flags > 0 %}
+                                    <span class="badge bg-success"><i class="bi bi-flag-fill"></i> {{
+                                        booking.passenger.green_flags or 0 }}</span>
+                                    {% if booking.passenger.red_flags > 0 %}
+                                    <span class="badge bg-danger"><i class="bi bi-flag-fill"></i> {{
+                                        booking.passenger.red_flags }}</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
                                 <div class="small text-muted">{{ ride.origin }} → {{ ride.destination }}</div>
+                                <a href="{{ url_for('user_profile', user_id=booking.passenger.id) }}" class="small"
+                                    target="_blank">
+                                    <i class="bi bi-person-circle me-1"></i>View Profile
+                                </a>
                             </div>
                             <span class="badge bg-warning text-dark">{{ booking.seats }} seat(s)</span>
                         </div>
