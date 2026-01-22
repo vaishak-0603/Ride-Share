@@ -1,0 +1,191 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard Overview</h2>
+    <p class="text-muted">Welcome back, {{ current_user.username }}! Here's your platform summary.</p>
+</div>
+
+<!-- Key Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card bg-primary text-white">
+            <div class="stat-icon">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_users }}</div>
+            <div class="stat-label">Total Users</div>
+            <small class="d-block mt-2">+{{ stats.new_users_month }} this month</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card bg-success text-white">
+            <div class="stat-icon">
+                <i class="bi bi-car-front-fill"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_rides }}</div>
+            <div class="stat-label">Total Rides</div>
+            <small class="d-block mt-2">{{ stats.active_rides }} active</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card bg-info text-white">
+            <div class="stat-icon">
+                <i class="bi bi-calendar-check-fill"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_bookings }}</div>
+            <div class="stat-label">Total Bookings</div>
+            <small class="d-block mt-2">{{ stats.pending_bookings }} pending</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card bg-{{ 'danger' if stats.active_sos > 0 else 'warning' }} text-white">
+            <div class="stat-icon">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="stat-number">{{ stats.active_sos }}</div>
+            <div class="stat-label">Active SOS Alerts</div>
+            <small class="d-block mt-2">{{ stats.pending_reports }} pending reports</small>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity & Charts -->
+<div class="row">
+    <!-- Recent Activity -->
+    <div class="col-lg-6 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="bi bi-activity me-2"></i>Recent Activity
+                </h5>
+            </div>
+            <div class="activity-feed">
+                {% if recent_activity %}
+                {% for activity in recent_activity[:10] %}
+                <div class="activity-item mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <i class="bi bi-{{ activity.icon }} text-{{ activity.color }} me-2"></i>
+                            <strong>{{ activity.title }}</strong>
+                            <p class="small text-muted mb-0">{{ activity.description }}</p>
+                        </div>
+                        <small class="text-muted">{{ activity.time_ago }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-inbox empty-state-icon"></i>
+                    <p>No recent activity</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="bi bi-graph-up me-2"></i>User Growth (Last 30 Days)
+                </h5>
+            </div>
+            <canvas id="userGrowthChart" height="250"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Trust Score Distribution -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="bi bi-pie-chart me-2"></i>Ride Package Distribution
+                </h5>
+            </div>
+            <canvas id="packageChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="bi bi-flag-fill me-2"></i>Trust Metrics
+                </h5>
+            </div>
+            <div class="trust-metrics">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>Total Green Flags</span>
+                    <span class="badge bg-success fs-6">{{ stats.total_green_flags }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>Total Red Flags</span>
+                    <span class="badge bg-danger fs-6">{{ stats.total_red_flags }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Average Trust Score</span>
+                    <span class="badge bg-primary fs-6">{{ stats.avg_trust_score }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // User Growth Chart
+    const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+    new Chart(userGrowthCtx, {
+        type: 'line',
+        data: {
+            labels: {{ user_growth_labels | tojson }},
+        datasets: [{
+            label: 'New Users',
+            data: {{ user_growth_data | tojson }},
+        borderColor: '#3498db',
+        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+        tension: 0.4,
+        fill: true
+        }]
+    },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+    // Package Distribution Chart
+    const packageCtx = document.getElementById('packageChart').getContext('2d');
+    new Chart(packageCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Daily', 'Weekly', 'Bi-Weekly', 'Monthly'],
+            datasets: [{
+                data: {{ package_distribution | tojson }
+    },
+        backgroundColor: ['#e74c3c', '#3498db', '#f39c12', '#27ae60']
+        }]
+    },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Users - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="bi bi-people me-2"></i>User Management</h2>
+</div>
+
+<!-- Search and Filters -->
+<div class="filter-section mb-4">
+    <form method="GET" class="row g-3">
+        <div class="col-md-6">
+            <label for="search" class="form-label">Search Users</label>
+            <input type="text" class="form-control" id="search" name="search" value="{{ search }}"
+                placeholder="Search by username or email...">
+        </div>
+        <div class="col-md-3">
+            <label for="sort" class="form-label">Sort By</label>
+            <select class="form-select" id="sort" name="sort">
+                <option value="created_at" {{ 'selected' if sort_by=='created_at' }}>Newest First</option>
+                <option value="username" {{ 'selected' if sort_by=='username' }}>Username</option>
+                <option value="email" {{ 'selected' if sort_by=='email' }}>Email</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Users Table -->
+<div class="admin-table">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Trust Score</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users.items %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>
+                    <strong>{{ user.username }}</strong>
+                    {% if user.is_admin %}
+                    <span class="badge bg-danger ms-1">Admin</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.email }}</td>
+                <td>
+                    <span class="badge bg-success">{{ user.green_flags or 0 }} 🟢</span>
+                    {% if user.red_flags > 0 %}
+                    <span class="badge bg-danger">{{ user.red_flags }} 🔴</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</td>
+                <td>
+                    <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if users.pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if users.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ users.prev_num }}&search={{ search }}&sort={{ sort_by }}">Previous</a>
+        </li>
+        {% endif %}
+
+        {% for page_num in users.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+        {% if page_num %}
+        <li class="page-item {{ 'active' if page_num == users.page }}">
+            <a class="page-link" href="?page={{ page_num }}&search={{ search }}&sort={{ sort_by }}">{{ page_num }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+        {% endfor %}
+
+        {% if users.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ users.next_num }}&search={{ search }}&sort={{ sort_by }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

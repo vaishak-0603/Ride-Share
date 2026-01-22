@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Rides - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="bi bi-car-front me-2"></i>Ride Management</h2>
+</div>
+
+<!-- Filters -->
+<div class="filter-section mb-4">
+    <form method="GET" class="row g-3">
+        <div class="col-md-5">
+            <label for="search" class="form-label">Search Rides</label>
+            <input type="text" class="form-control" id="search" name="search" value="{{ search }}"
+                placeholder="Search by location or driver...">
+        </div>
+        <div class="col-md-4">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status" name="status">
+                <option value="">All Status</option>
+                <option value="UPCOMING" {{ 'selected' if status_filter=='UPCOMING' }}>Upcoming</option>
+                <option value="ONGOING" {{ 'selected' if status_filter=='ONGOING' }}>Ongoing</option>
+                <option value="COMPLETED" {{ 'selected' if status_filter=='COMPLETED' }}>Completed</option>
+                <option value="CANCELLED" {{ 'selected' if status_filter=='CANCELLED' }}>Cancelled</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Rides Table -->
+<div class="admin-table">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Route</th>
+                <th>Driver</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Seats</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ride in rides.items %}
+            <tr>
+                <td>{{ ride.id }}</td>
+                <td>
+                    <strong>{{ ride.origin }}</strong> → <strong>{{ ride.destination }}</strong>
+                    <br><small class="text-muted">{{ ride.distance }} km</small>
+                </td>
+                <td>{{ ride.driver.username }}</td>
+                <td>{{ ride.start_date.strftime('%b %d, %Y') if ride.start_date else 'N/A' }}</td>
+                <td>
+                    <span
+                        class="badge bg-{{ 'success' if ride.status == 'COMPLETED' else ('primary' if ride.status == 'UPCOMING' else ('warning' if ride.status == 'ONGOING' else 'danger')) }}">
+                        {{ ride.status }}
+                    </span>
+                </td>
+                <td>{{ ride.available_seats }}/{{ ride.seats }}</td>
+                <td>
+                    <a href="{{ url_for('admin_ride_detail', ride_id=ride.id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if rides.pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if rides.has_prev %}
+        <li class="page-item">
+            <a class="page-link"
+                href="?page={{ rides.prev_num }}&search={{ search }}&status={{ status_filter }}">Previous</a>
+        </li>
+        {% endif %}
+
+        {% for page_num in rides.iter_pages() %}
+        {% if page_num %}
+        <li class="page-item {{ 'active' if page_num == rides.page }}">
+            <a class="page-link" href="?page={{ page_num }}&search={{ search }}&status={{ status_filter }}">{{ page_num
+                }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        {% if rides.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+                href="?page={{ rides.next_num }}&search={{ search }}&status={{ status_filter }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

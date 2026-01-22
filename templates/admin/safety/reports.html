@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Safety Center - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="bi bi-exclamation-triangle me-2"></i>Safety Center</h2>
+</div>
+
+<!-- SOS Alerts -->
+{% if sos_alerts %}
+<div class="admin-card mb-4">
+    <div class="admin-card-header bg-danger text-white">
+        <h5 class="admin-card-title mb-0">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Active SOS Alerts ({{ sos_alerts|length }})
+        </h5>
+    </div>
+    <div class="list-group list-group-flush">
+        {% for alert in sos_alerts %}
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="mb-1"><strong>{{ alert.subject }}</strong></h6>
+                    <p class="mb-1">{{ alert.description }}</p>
+                    <small class="text-muted">
+                        <i class="bi bi-person"></i> {{ alert.user.username }} |
+                        <i class="bi bi-clock"></i> {{ alert.created_at.strftime('%b %d, %Y at %I:%M %p') if
+                        alert.created_at else 'N/A' }}
+                        {% if alert.location %}
+                        | <i class="bi bi-geo-alt"></i> {{ alert.location }}
+                        {% endif %}
+                    </small>
+                </div>
+                <div>
+                    <form method="POST" action="{{ url_for('admin_resolve_report', report_id=alert.id) }}"
+                        class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-success"
+                            onclick="return confirm('Mark this SOS as resolved?')">
+                            <i class="bi bi-check2"></i> Resolve
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success mb-4">
+    <i class="bi bi-check-circle-fill me-2"></i>No active SOS alerts
+</div>
+{% endif %}
+
+<!-- Pending Reports -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="bi bi-flag me-2"></i>Pending Reports
+        </h5>
+    </div>
+    {% if reports %}
+    <div class="list-group list-group-flush">
+        {% for report in reports %}
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-1">
+                        <h6 class="mb-0 me-2"><strong>{{ report.subject }}</strong></h6>
+                        <span
+                            class="badge bg-{{ 'danger' if report.report_type == 'emergency' else ('warning' if report.report_type == 'complaint' else 'info') }}">
+                            {{ report.report_type|title }}
+                        </span>
+                    </div>
+                    <p class="mb-1">{{ report.description }}</p>
+                    <small class="text-muted">
+                        <i class="bi bi-person"></i> {{ report.user.username }} |
+                        <i class="bi bi-clock"></i> {{ report.created_at.strftime('%b %d, %Y at %I:%M %p') if
+                        report.created_at else 'N/A' }}
+                        {% if report.ride_id %}
+                        | <i class="bi bi-car-front"></i> <a
+                            href="{{ url_for('admin_ride_detail', ride_id=report.ride_id) }}">Ride #{{ report.ride_id
+                            }}</a>
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="ms-3">
+                    <form method="POST" action="{{ url_for('admin_resolve_report', report_id=report.id) }}"
+                        class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-success">
+                            <i class="bi bi-check2"></i> Resolve
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_dismiss_report', report_id=report.id) }}"
+                        class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x"></i> Dismiss
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-4 text-center text-muted">
+        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+        <p class="mt-2">No pending reports</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

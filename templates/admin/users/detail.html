@@ -1,0 +1,121 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ user.username }} - Users - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary mb-3">
+        <i class="bi bi-arrow-left"></i> Back to Users
+    </a>
+    <h2><i class="bi bi-person-circle me-2"></i>User Details: {{ user.username }}</h2>
+</div>
+
+<div class="row">
+    <!-- User Info Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Profile Information</h5>
+            </div>
+            <div class="mb-3">
+                <strong>ID:</strong> {{ user.id }}
+            </div>
+            <div class="mb-3">
+                <strong>Username:</strong> {{ user.username }}
+            </div>
+            <div class="mb-3">
+                <strong>Email:</strong> {{ user.email }}
+            </div>
+            <div class="mb-3">
+                <strong>Phone:</strong> {{ user.phone or 'Not provided' }}
+            </div>
+            <div class="mb-3">
+                <strong>Joined:</strong> {{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}
+            </div>
+            <div class="mb-3">
+                <strong>Admin:</strong>
+                {% if user.is_admin %}
+                <span class="badge bg-danger">Yes</span>
+                {% else %}
+                <span class="badge bg-secondary">No</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Statistics</h5>
+            </div>
+            <div class="mb-3">
+                <strong>Rides Offered:</strong> {{ rides_offered }}
+            </div>
+            <div class="mb-3">
+                <strong>Rides Taken:</strong> {{ rides_taken }}
+            </div>
+            <div class="mb-3">
+                <strong>Completion Rate:</strong> {{ completion_rate }}%
+            </div>
+            <div class="mb-3">
+                <strong>Total Rides:</strong> {{ user.total_rides or 0 }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Trust Score Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Trust Score</h5>
+            </div>
+            <div class="mb-3">
+                <strong>Green Flags:</strong>
+                <span class="badge bg-success fs-6">{{ user.green_flags or 0 }}</span>
+            </div>
+            <div class="mb-3">
+                <strong>Red Flags:</strong>
+                <span class="badge bg-danger fs-6">{{ user.red_flags or 0 }}</span>
+            </div>
+            <div class="mb-3">
+                <strong>Rating:</strong> {{ user.rating or 0 }}/5.0
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cars Section -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title"><i class="bi bi-car-front me-2"></i>Registered Cars</h5>
+    </div>
+    {% if user.cars %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Make/Model</th>
+                    <th>License Plate</th>
+                    <th>Fuel Type</th>
+                    <th>Mileage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for car in user.cars %}
+                <tr>
+                    <td>{{ car.make }} {{ car.model }}</td>
+                    <td>{{ car.license_plate }}</td>
+                    <td>{{ car.fuel_type }}</td>
+                    <td>{{ car.mileage }} km/l</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No cars registered</p>
+    {% endif %}
+</div>
+
+{% endblock %}

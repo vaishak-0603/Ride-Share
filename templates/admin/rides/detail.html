@@ -1,0 +1,124 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Ride #{{ ride.id }} - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin_rides') }}" class="btn btn-outline-secondary mb-3">
+        <i class="bi bi-arrow-left"></i> Back to Rides
+    </a>
+    <h2><i class="bi bi-car-front me-2"></i>Ride Details #{{ ride.id }}</h2>
+</div>
+
+<div class="row">
+    <!-- Ride Info -->
+    <div class="col-lg-6 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Ride Information</h5>
+            </div>
+            <div class="mb-3">
+                <strong>From:</strong> {{ ride.origin }}
+            </div>
+            <div class="mb-3">
+                <strong>To:</strong> {{ ride.destination }}
+            </div>
+            <div class="mb-3">
+                <strong>Distance:</strong> {{ ride.distance }} km
+            </div>
+            <div class="mb-3">
+                <strong>Start Date:</strong> {{ ride.start_date.strftime('%B %d, %Y at %I:%M %p') if ride.start_date
+                else 'N/A' }}
+            </div>
+            <div class="mb-3">
+                <strong>Package Type:</strong> {{ ride.package_type|title }}
+            </div>
+            <div class="mb-3">
+                <strong>Status:</strong>
+                <span class="badge bg-{{ 'success' if ride.status == 'COMPLETED' else 'primary' }}">
+                    {{ ride.status }}
+                </span>
+            </div>
+            <div class="mb-3">
+                <strong>Available Seats:</strong> {{ ride.available_seats }}/{{ ride.seats }}
+            </div>
+            <div class="mb-3">
+                <strong>Price per Seat:</strong> ₹{{ ride.price_per_seat }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver Info -->
+    <div class="col-lg-6 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Driver Information</h5>
+            </div>
+            <div class="mb-3">
+                <strong>Name:</strong>
+                <a href="{{ url_for('admin_user_detail', user_id=ride.driver.id) }}">
+                    {{ ride.driver.username }}
+                </a>
+            </div>
+            <div class="mb-3">
+                <strong>Email:</strong> {{ ride.driver.email }}
+            </div>
+            <div class="mb-3">
+                <strong>Trust Score:</strong>
+                <span class="badge bg-success">{{ ride.driver.green_flags or 0 }} 🟢</span>
+                <span class="badge bg-danger">{{ ride.driver.red_flags or 0 }} 🔴</span>
+            </div>
+            {% if ride.car %}
+            <div class="mb-3">
+                <strong>Vehicle:</strong> {{ ride.car.make }} {{ ride.car.model }} ({{ ride.car.license_plate }})
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bookings -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title"><i class="bi bi-people me-2"></i>Bookings</h5>
+    </div>
+    {% if ride.bookings %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Passenger</th>
+                    <th>Email</th>
+                    <th>Seats</th>
+                    <th>Status</th>
+                    <th>Booked On</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in ride.bookings %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('admin_user_detail', user_id=booking.passenger.id) }}">
+                            {{ booking.passenger.username }}
+                        </a>
+                    </td>
+                    <td>{{ booking.passenger.email }}</td>
+                    <td>{{ booking.seats }}</td>
+                    <td>
+                        <span
+                            class="badge bg-{{ 'success' if booking.status == 'CONFIRMED' else ('warning' if booking.status == 'PENDING' else 'secondary') }}">
+                            {{ booking.status }}
+                        </span>
+                    </td>
+                    <td>{{ booking.created_at.strftime('%b %d, %Y') if booking.created_at else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No bookings yet</p>
+    {% endif %}
+</div>
+
+{% endblock %}

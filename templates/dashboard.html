@@ -275,8 +275,7 @@ Modern, accessible dashboard with collapsible sections and compact cards.
                                     {% endif %}
                                 </div>
                                 <div class="small text-muted">{{ ride.origin }} → {{ ride.destination }}</div>
-                                <a href="{{ url_for('user_profile', user_id=booking.passenger.id) }}" class="small"
-                                    target="_blank">
+                                <a href="{{ url_for('user_profile', user_id=booking.passenger.id) }}" class="small">
                                     <i class="bi bi-person-circle me-1"></i>View Profile
                                 </a>
                             </div>
