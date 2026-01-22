@@ -73,6 +73,12 @@ def inject_now():
     """Make 'now' available in all templates for footer copyright year etc."""
     return {'now': datetime.now()}
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Serve uploaded files."""
+    from flask import send_from_directory
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 # Constants
 FUEL_PRICES = {
     'petrol': 102.0,  # ₹102 per liter
