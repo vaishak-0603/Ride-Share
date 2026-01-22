@@ -2496,6 +2496,35 @@ def admin_ride_detail(ride_id):
     return render_template('admin/rides/detail.html',
                          ride=ride,
                          pending_sos_count=pending_sos_count)
+
+@app.route('/admin/rides/<int:ride_id>/cancel', methods=['POST'])
+@login_required
+@admin_required
+def admin_cancel_ride(ride_id):
+    """Admin cancel ride."""
+    ride = Ride.query.get_or_404(ride_id)
+    
+    if ride.status in ['CANCELLED', 'COMPLETED']:
+        flash('Ride is already cancelled or completed.', 'warning')
+        return redirect(url_for('admin_ride_detail', ride_id=ride_id))
+    
+    ride.status = 'CANCELLED'
+    
+    # Cancel all pending bookings
+    for booking in ride.bookings:
+        if booking.status == 'PENDING':
+            booking.status = 'REJECTED'
+        elif booking.status == 'CONFIRMED':
+            booking.status = 'CANCELLED'
+            
+    db.session.commit()
+    
+    log_admin_action('Cancel Ride', target_type='Ride', target_id=ride.id, 
+                    details=f'Ride {ride.id} cancelled by admin')
+    
+    flash('Ride has been cancelled successfully.', 'success')
+    return redirect(url_for('admin_ride_detail', ride_id=ride_id))
+
 @app.route('/admin/safety')
 @login_required
 @admin_required
