@@ -2252,12 +2252,16 @@ def admin_dashboard():
     total_bookings = Booking.query.count()
     pending_bookings = Booking.query.filter_by(status=Booking.STATUS_PENDING).count()
     
-    # SOS and reports
-    active_sos = Report.query.filter_by(
-        report_type='emergency',
-        status='pending'
-    ).count()
-    pending_reports = Report.query.filter_by(status='pending').count()
+    # SOS and reports - handle if Report model doesn't exist
+    try:
+        active_sos = Report.query.filter_by(
+            report_type='emergency',
+            status='pending'
+        ).count()
+        pending_reports = Report.query.filter_by(status='pending').count()
+    except:
+        active_sos = 0
+        pending_reports = 0
     
     # Trust metrics
     total_green_flags = db.session.query(func.sum(User.green_flags)).scalar() or 0
