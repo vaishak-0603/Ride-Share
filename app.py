@@ -1324,6 +1324,26 @@ def book_ride(ride_id):
     if existing_booking and existing_booking.status in [Booking.STATUS_CONFIRMED, Booking.STATUS_PENDING]:
         flash('You already have a booking for this ride.', 'error')
         return redirect(url_for('search_rides'))
+
+    # Check for time collision with other active bookings
+    ride_end_time = ride.get_estimated_end_time()
+    
+    user_bookings = Booking.query.filter_by(passenger_id=current_user.id)\
+        .filter(Booking.status.in_([Booking.STATUS_CONFIRMED, Booking.STATUS_PENDING]))\
+        .join(Ride).all()
+        
+    for booking in user_bookings:
+        # Skip this ride if it somehow got in the list (already checked above)
+        if booking.ride_id == ride.id:
+            continue
+            
+        other_ride = booking.ride
+        other_ride_end = other_ride.get_estimated_end_time()
+        
+        # Check overlap: (StartA < EndB) and (EndA > StartB)
+        if (ride.start_date < other_ride_end) and (ride_end_time > other_ride.start_date):
+            flash(f'Time Conflict: You already have a booking for ride #{other_ride.id} during this time.', 'error')
+            return redirect(url_for('search_rides'))
     
     if request.method == 'POST':
         try:
