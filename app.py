@@ -2215,6 +2215,23 @@ def admin_logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('admin_login'))
+
+def _time_ago(dt):
+    """Helper to calculate time ago."""
+    if not dt:
+        return 'N/A'
+    now = datetime.now()
+    diff = now - dt
+    
+    if diff.days > 0:
+        return f"{diff.days}d ago"
+    elif diff.seconds // 3600 > 0:
+        return f"{diff.seconds // 3600}h ago"
+    elif diff.seconds // 60 > 0:
+        return f"{diff.seconds // 60}m ago"
+    else:
+        return "just now"
+
 @app.route('/admin')
 @app.route('/admin/dashboard')
 @login_required
