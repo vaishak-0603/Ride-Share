@@ -45,6 +45,17 @@
             <div class="mb-3">
                 <strong>Price per Seat:</strong> ₹{{ ride.price_per_seat }}
             </div>
+
+            {% if ride.status not in ['CANCELLED', 'COMPLETED'] %}
+            <div class="mt-4 pt-3 border-top">
+                <form action="{{ url_for('admin_cancel_ride', ride_id=ride.id) }}" method="POST">
+                    <button type="submit" class="btn btn-danger w-100"
+                        onclick="return confirm('Are you sure you want to cancel this ride? This action cannot be undone.')">
+                        <i class="bi bi-x-circle me-2"></i>Cancel Ride
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 
