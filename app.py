@@ -2180,8 +2180,28 @@ def cancel_sos():
 # Application entry point
 
 # ============================================================================
-# ADMIN PANEL ROUTES
+# ADMIN PANEL HELPERS & ROUTES
 # ============================================================================
+
+def log_admin_action(action, target_type=None, target_id=None, details=None):
+    """Helper function to log admin actions."""
+    try:
+        from app import db  # Ensure db is available
+        log = AdminLog(
+            admin_id=current_user.id,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            details=details,
+            ip_address=request.remote_addr
+        )
+        db.session.add(log)
+        db.session.commit()
+        return True
+    except Exception as e:
+        # Prevent logging failure from crashing the app
+        print(f"Failed to log admin action: {str(e)}")
+        return False
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -2497,22 +2517,24 @@ def admin_dismiss_report(report_id):
 
 if __name__ == '__main__':
     with app.app_context():
-        # Create tables if they don't exist
+        # Create all missing tables (db.create_all is safe to call)
+        db.create_all()
+        print("Database tables verified/created.")
+        
         inspector = inspect(db.engine)
-        if not inspector.has_table('user'):
-            db.create_all()
-            print("Database tables created.")
         
         # Add migrations for new columns
         try:
             # Check if package_type column exists in ride table
-            columns = [col['name'] for col in inspector.get_columns('ride')]
-            if 'package_type' not in columns:
+            ride_columns = [col['name'] for col in inspector.get_columns('ride')]
+            if 'package_type' not in ride_columns:
                 print("Adding package_type column to ride table...")
-                db.engine.execute('ALTER TABLE ride ADD COLUMN package_type VARCHAR(20) NOT NULL DEFAULT "weekly"')
-                print("Migration completed successfully.")
+                with db.engine.connect() as conn:
+                    conn.execute(text('ALTER TABLE ride ADD COLUMN package_type VARCHAR(20) DEFAULT "weekly"'))
+                    conn.commit()
+                print("Migration for package_type completed successfully.")
         except Exception as e:
-            print(f"Migration error: {e}")
+            print(f"Migration error for package_type: {e}")
         
         # Add new columns with migrations
         booking_columns = [col['name'] for col in inspector.get_columns('booking')]
