@@ -1452,10 +1452,8 @@ def confirm_booking(booking_id):
         flash('This booking cannot be confirmed.', 'error')
         return redirect(url_for('dashboard'))
         
-    # Check if there are enough seats available
-    if booking.seats > booking.ride.available_seats:
-        flash('Not enough seats available.', 'error')
-        return redirect(url_for('dashboard'))
+    # Note: No need to check seat availability here because seats were already 
+    # reduced when the PENDING booking was created (see line 1380 in book_ride route)
         
     # Confirm the booking (seats already reduced when booking was created)
     booking.status = Booking.STATUS_CONFIRMED
